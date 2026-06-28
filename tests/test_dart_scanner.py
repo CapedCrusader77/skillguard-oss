@@ -147,7 +147,7 @@ def test_dart_files_discovered(tmp_path):
     dart_file = tmp_path / "main.dart"
     dart_file.write_text("void main() {}", encoding="utf-8")
 
-    files, git_repos = discover_files(tmp_path)
+    files, git_repos, flutter_roots = discover_files(tmp_path)
     assert dart_file in files
 
 

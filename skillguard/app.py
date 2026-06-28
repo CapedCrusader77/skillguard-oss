@@ -199,8 +199,8 @@ def scan(
     # Detect repository boundaries and group files
     from skillguard.core.repository_discovery import discover_files
     try:
-        _, git_repos = discover_files(path)
-        repo_files_map = group_files_by_repository(path, files, git_repos)
+        _, git_repos, flutter_roots = discover_files(path)
+        repo_files_map = group_files_by_repository(path, files, git_repos, flutter_roots)
     except Exception as e:
         console.print(f"[bold red]Error during repository grouping:[/] {e}")
         raise typer.Exit(code=1)
