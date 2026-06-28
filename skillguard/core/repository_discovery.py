@@ -22,6 +22,7 @@ SUPPORTED_EXTENSIONS = {
     ".py": "Python",
     ".js": "JavaScript",
     ".ts": "TypeScript",
+    ".dart": "Dart",
 }
 
 # Extensible extensions mapping for future languages

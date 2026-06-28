@@ -55,6 +55,22 @@ RULE_SCORES = {
 
     # JavaScript/TypeScript Secret/Env Detection
     "process.env": 5,
+
+    # Dart/Flutter Command Execution
+    "dart.Process.run": 25,
+    "dart.Process.start": 25,
+
+    # Dart/Flutter Filesystem Detection
+    "dart.File": 5,
+    "dart.Directory": 5,
+
+    # Dart/Flutter Network Detection
+    "dart.http.get": 5,
+    "dart.http.post": 10,
+    "dart.Dio": 10,
+
+    # Dart/Flutter Environment Detection
+    "dart.Platform.environment": 5,
 }
 
 # Mapping of rule identifiers/methods to Rule IDs and categories
@@ -97,4 +113,17 @@ RULE_METADATA = {
     "https.request": {"id": "NET104", "severity": SEVERITY_LOW, "category": CAT_NETWORK, "message": "https.request detected"},
 
     "process.env": {"id": "SEC102", "severity": SEVERITY_LOW, "category": CAT_SECRET, "message": "process.env access detected"},
+
+    # Dart/Flutter
+    "dart.Process.run":          {"id": "CMD201", "severity": SEVERITY_HIGH,   "category": CAT_COMMAND, "message": "Process.run detected (Dart command execution)"},
+    "dart.Process.start":        {"id": "CMD202", "severity": SEVERITY_HIGH,   "category": CAT_COMMAND, "message": "Process.start detected (Dart command execution)"},
+
+    "dart.File":                 {"id": "FIL201", "severity": SEVERITY_LOW,    "category": CAT_FILE,    "message": "File() constructor detected (Dart filesystem access)"},
+    "dart.Directory":            {"id": "FIL202", "severity": SEVERITY_LOW,    "category": CAT_FILE,    "message": "Directory() constructor detected (Dart filesystem access)"},
+
+    "dart.http.get":             {"id": "NET201", "severity": SEVERITY_LOW,    "category": CAT_NETWORK, "message": "http.get detected (Dart network request)"},
+    "dart.http.post":            {"id": "NET202", "severity": SEVERITY_MEDIUM, "category": CAT_NETWORK, "message": "http.post detected (Dart network request)"},
+    "dart.Dio":                  {"id": "NET203", "severity": SEVERITY_MEDIUM, "category": CAT_NETWORK, "message": "Dio client detected (Dart HTTP client)"},
+
+    "dart.Platform.environment": {"id": "SEC201", "severity": SEVERITY_LOW,    "category": CAT_SECRET,  "message": "Platform.environment accessed (Dart env vars)"},
 }

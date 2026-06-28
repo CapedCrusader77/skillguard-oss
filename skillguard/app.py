@@ -12,7 +12,7 @@ from skillguard import __version__
 from skillguard.core import (
     get_scan_targets, evaluate_risk, calculate_trust_score, group_files_by_repository, TrustScoreReport
 )
-from skillguard.scanners import scan_file, JavaScriptScanner, TypeScriptScanner
+from skillguard.scanners import scan_file, JavaScriptScanner, TypeScriptScanner, DartScanner
 from skillguard.analyzers import analyzer_registry
 from skillguard.analysis import (
     RuleBasedClaimExtractor, BehaviorAnalyzer, TrustEvaluator,
@@ -236,6 +236,8 @@ def scan(
                         file_findings = JavaScriptScanner(file_path, repo_root).scan()
                     elif ext == ".ts":
                         file_findings = TypeScriptScanner(file_path, repo_root).scan()
+                    elif ext == ".dart":
+                        file_findings = DartScanner(file_path, repo_root).scan()
                     else:
                         file_findings = []
                     repo_findings.extend(file_findings)

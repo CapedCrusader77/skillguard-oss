@@ -5,6 +5,7 @@ from skillguard.scanners.network_detector import NetworkDetector
 from skillguard.scanners.secret_detector import SecretDetector
 from skillguard.scanners.javascript_scanner import JavaScriptScanner
 from skillguard.scanners.typescript_scanner import TypeScriptScanner
+from skillguard.scanners.dart_scanner import DartScanner
 
 __all__ = [
     "BaseDetector",
@@ -15,4 +16,5 @@ __all__ = [
     "SecretDetector",
     "JavaScriptScanner",
     "TypeScriptScanner",
+    "DartScanner",
 ]
