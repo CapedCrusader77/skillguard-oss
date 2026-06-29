@@ -205,6 +205,22 @@ def write_html_report(report: Report, trust_report: TrustScoreReport, output_pat
             else:
                 mismatch_items.append('<div style="display: flex; align-items: center; gap: 0.5rem; color: #10b981; font-size: 0.9rem;"><span>No suspicious mismatches detected</span></div>')
 
+            ai_sub_card = ""
+            if eval_report.ai_assessment:
+                ai_list = "".join(f'<div style="margin-bottom: 0.5rem; color: #f59e0b; font-size: 0.9rem;">&bull; {html.escape(desc)}</div>' for desc in eval_report.ai_assessment)
+                ai_sub_card = f"""
+                    <div class="sub-card" style="grid-column: span 3; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.15); margin-top: 1rem;">
+                        <h3 class="sub-card-title" style="color: #38bdf8; margin-bottom: 0.75rem;">AI Assessment</h3>
+                        <div>
+                            {ai_list}
+                        </div>
+                        <div style="margin-top: 1rem; font-weight: 600; font-size: 0.95rem; color: #fff; display: flex; gap: 2rem;">
+                            <span>AI Verdict: <span style="color: #f97316;">{html.escape(eval_report.ai_verdict or "REVIEW REQUIRED")}</span></span>
+                            <span>Trust Impact: <span style="color: #ef4444;">{eval_report.ai_trust_impact or 0}</span></span>
+                        </div>
+                    </div>
+                """
+
             eval_card_html = f"""
             <div class="card" style="grid-column: span 3; margin-top: 1.5rem;">
                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.5rem;">Claim vs Behavior Alignment</h2>
@@ -229,6 +245,7 @@ def write_html_report(report: Report, trust_report: TrustScoreReport, output_pat
                         </div>
                         {"".join(mismatch_items)}
                     </div>
+                    {ai_sub_card}
                 </div>
             </div>
             """
@@ -389,13 +406,10 @@ def write_html_report(report: Report, trust_report: TrustScoreReport, output_pat
             
             # Find repo name
             repo_name = "Unknown"
-            f_path = Path(f.file).resolve()
             for r in report.repositories:
-                r_path = Path(r.path).resolve()
-                if r_path == f_path or r_path in f_path.parents:
+                if any(rf is f for rf in r.findings):
                     repo_name = r.name
                     break
-                    
             top_findings_html.append(f"""
             <div class="finding-card" data-severity="{f.severity.upper()}">
                 <div class="finding-header">

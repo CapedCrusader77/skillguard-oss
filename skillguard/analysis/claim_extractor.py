@@ -63,6 +63,21 @@ class RuleBasedClaimExtractor(BaseClaimExtractor):
             except Exception:
                 pass
 
+        # 2.5 Try reading pubspec.yaml
+        pubspec = root_dir / "pubspec.yaml"
+        if pubspec.exists():
+            try:
+                content = pubspec.read_text(encoding="utf-8", errors="ignore")
+                desc_match = re.search(r'^description\s*:\s*(.+)$', content, re.MULTILINE)
+                if desc_match:
+                    desc = desc_match.group(1).strip()
+                    desc = desc.strip('\'"')
+                    if not purpose:
+                        purpose = desc
+                    combined_text += " " + desc
+            except Exception:
+                pass
+
         # 3. Try reading README.md or README.txt
         readme_files = [root_dir / "README.md", root_dir / "README.txt", root_dir / "readme.md", root_dir / "readme.txt"]
         readme_content = ""

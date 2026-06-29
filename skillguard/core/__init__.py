@@ -5,6 +5,10 @@ from skillguard.core.repository_discovery import (
 from skillguard.core.scoring import calculate_score, evaluate_risk, ID_SCORES
 from skillguard.core.constants import RULE_SCORES, RULE_METADATA
 from skillguard.core.trust_score import calculate_trust_score, TrustScoreReport
+from skillguard.core.github_scanner import (
+    is_github_url, clone_repository, cleanup_repository, get_repository_name,
+    GitHubScannerError, GitNotInstalledError, InvalidGitHubURLError, CloneFailureError
+)
 
 __all__ = [
     "discover_files",
@@ -20,4 +24,12 @@ __all__ = [
     "RULE_METADATA",
     "calculate_trust_score",
     "TrustScoreReport",
+    "is_github_url",
+    "clone_repository",
+    "cleanup_repository",
+    "get_repository_name",
+    "GitHubScannerError",
+    "GitNotInstalledError",
+    "InvalidGitHubURLError",
+    "CloneFailureError",
 ]

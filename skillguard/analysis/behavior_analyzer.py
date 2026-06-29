@@ -14,6 +14,8 @@ class BehaviorAnalyzer:
         email = False
         browser = False
         credentials = False
+        command_execution = False
+        environment_access = False
 
         # 1. Analyze findings for implicit permissions
         for f in findings:
@@ -28,6 +30,10 @@ class BehaviorAnalyzer:
                 
             if cat == "SECRET_ACCESS" or fid in {"GHA003", "SEC101", "SEC102"}:
                 credentials = True
+                environment_access = True
+
+            if cat == "COMMAND_EXECUTION":
+                command_execution = True
 
         # 2. Discover packages/modules inside source files
         try:
@@ -40,6 +46,8 @@ class BehaviorAnalyzer:
         re_db = re.compile(r"\b(sqlite3|sqlite|mysql|pg|prisma|sqlalchemy|pymongo|psycopg2|redis)\b", re.IGNORECASE)
         re_email = re.compile(r"\b(smtplib|email|nodemailer|sendgrid|mailchimp)\b", re.IGNORECASE)
         re_browser = re.compile(r"\b(playwright|puppeteer|selenium|browser_use|webdriver|browser_cookie3)\b", re.IGNORECASE)
+        re_cmd = re.compile(r"\b(subprocess|os\.system|child_process|execSync|spawn|exec|sh|pexpect)\b", re.IGNORECASE)
+        re_env = re.compile(r"\b(process\.env|os\.environ|os\.getenv|getenv|dotenv)\b", re.IGNORECASE)
         
         for file_path in files:
             if file_path.suffix.lower() not in {".py", ".js", ".ts", ".json", ".txt"}:
@@ -64,6 +72,12 @@ class BehaviorAnalyzer:
                 # Check Browser automation imports / calls
                 if re_browser.search(clean) and ("import" in clean or "require" in clean):
                     browser = True
+                # Check Command execution imports / calls
+                if re_cmd.search(clean) and ("import" in clean or "require" in clean):
+                    command_execution = True
+                # Check Env imports / calls
+                if re_env.search(clean) and ("import" in clean or "require" in clean or "load_dotenv" in clean):
+                    environment_access = True
 
                 # Code references
                 if "sqlite3.connect" in clean or "prisma.user" in clean or "mongoose.connect" in clean:
@@ -72,6 +86,10 @@ class BehaviorAnalyzer:
                     email = True
                 if "chromium.launch" in clean or "webdriver.Chrome" in clean or "playwright.async_api" in clean:
                     browser = True
+                if "subprocess.Popen" in clean or "subprocess.run" in clean or "os.system(" in clean or "child_process.exec" in clean:
+                    command_execution = True
+                if "os.environ" in clean or "os.getenv" in clean or "process.env" in clean:
+                    environment_access = True
 
         return BehaviorProfile(
             filesystem_access=filesystem,
@@ -79,5 +97,7 @@ class BehaviorAnalyzer:
             database_access=database,
             email_access=email,
             browser_automation=browser,
-            credential_access=credentials
+            credential_access=credentials,
+            command_execution=command_execution,
+            environment_access=environment_access or credentials
         )

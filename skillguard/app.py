@@ -137,15 +137,17 @@ def aggregate_findings(findings: List[Finding]) -> List[Finding]:
         )
     return aggregated
 
+from skillguard.core.github_scanner import (
+    is_github_url, clone_repository, cleanup_repository, get_repository_name,
+    GitHubScannerError
+)
+import tempfile
+
 @app.command()
 def scan(
-    path: Path = typer.Argument(
+    path: str = typer.Argument(
         ...,
-        help="Path to the directory or file to scan",
-        exists=True,
-        file_okay=True,
-        dir_okay=True,
-        resolve_path=True,
+        help="Path to the directory, file, or GitHub repository URL to scan",
     ),
     json_report: bool = typer.Option(
         False,
@@ -167,6 +169,11 @@ def scan(
         "--trust",
         help="Evaluate claimed purpose vs observed behavior"
     ),
+    ai: bool = typer.Option(
+        False,
+        "--ai",
+        help="Use AI to analyze whether observed behavior matches claimed purpose"
+    ),
     output: str = typer.Option(
         "report.json",
         "--output",
@@ -185,9 +192,69 @@ def scan(
     console.print(Panel(Align.center(header_content), border_style="cyan", box=box.ROUNDED))
     console.print()
 
+    is_github = is_github_url(path)
+    github_repo_name = None
+    if is_github:
+        try:
+            github_repo_name = get_repository_name(path)
+        except Exception as e:
+            console.print(f"[bold red]GitHub Scan Error:[/] {e}")
+            raise typer.Exit(code=1)
+
+    temp_dir_obj = None
+    try:
+        if is_github:
+            try:
+                temp_dir_obj = tempfile.TemporaryDirectory(prefix="skillguard_git_")
+                scan_path = Path(temp_dir_obj.name)
+                console.print(f"[bold blue]Cloning GitHub repository [cyan]{path}[/cyan] into temporary directory...[/bold blue]")
+                clone_repository(path, str(scan_path))
+            except GitHubScannerError as e:
+                console.print(f"[bold red]GitHub Scan Error:[/] {e}")
+                raise typer.Exit(code=1)
+            except Exception as e:
+                console.print(f"[bold red]Unexpected error during clone:[/] {e}")
+                raise typer.Exit(code=1)
+        else:
+            scan_path = Path(path).resolve()
+            if not scan_path.exists():
+                console.print(f"[bold red]Error:[/] Path does not exist: {path}")
+                raise typer.Exit(code=1)
+
+        _run_scan(
+            scan_path=scan_path,
+            json_report=json_report,
+            html_report=html_report,
+            full=full,
+            trust=trust,
+            ai=ai,
+            output=output,
+            is_github=is_github,
+            github_repo_name=github_repo_name,
+            path=path
+        )
+    finally:
+        if temp_dir_obj:
+            try:
+                cleanup_repository(temp_dir_obj.name)
+            except Exception:
+                pass
+
+def _run_scan(
+    scan_path: Path,
+    json_report: bool,
+    html_report: bool,
+    full: bool,
+    trust: bool,
+    ai: bool,
+    output: str,
+    is_github: bool,
+    github_repo_name: str,
+    path: str
+):
     # Load files using the repository discovery engine
     try:
-        files, lang_stats, repo_count = get_scan_targets(path)
+        files, lang_stats, repo_count = get_scan_targets(scan_path)
     except Exception as e:
         console.print(f"[bold red]Error during file discovery:[/] {e}")
         raise typer.Exit(code=1)
@@ -199,8 +266,8 @@ def scan(
     # Detect repository boundaries and group files
     from skillguard.core.repository_discovery import discover_files
     try:
-        _, git_repos, flutter_roots = discover_files(path)
-        repo_files_map = group_files_by_repository(path, files, git_repos, flutter_roots)
+        _, git_repos, flutter_roots = discover_files(scan_path)
+        repo_files_map = group_files_by_repository(scan_path, files, git_repos, flutter_roots)
     except Exception as e:
         console.print(f"[bold red]Error during repository grouping:[/] {e}")
         raise typer.Exit(code=1)
@@ -223,6 +290,8 @@ def scan(
     # Execute isolated repository scans
     for repo_root, repo_files in repo_files_map.items():
         repo_name = repo_root.name or repo_root.resolve().name or "root"
+        if is_github and repo_root == scan_path:
+            repo_name = github_repo_name
         with console.status(f"[bold blue]Scanning repository: {repo_name}...", spinner="dots"):
             repo_findings = []
             
@@ -337,10 +406,37 @@ def scan(
 
             # Evaluate Claim vs Behavior
             repo_eval = None
-            if trust or full:
+            if trust or full or ai:
                 try:
                     repo_claims = RuleBasedClaimExtractor().extract_claims(repo_root)
                     repo_eval = TrustEvaluator().evaluate(repo_claims, repo_behavior or BehaviorProfile())
+                    if ai:
+                        from skillguard.analysis.llm_providers import get_provider
+                        provider = get_provider()
+                        caps = {
+                            "Network Access": bool(repo_behavior.network_access) if repo_behavior else False,
+                            "Filesystem Access": bool(repo_behavior.filesystem_access) if repo_behavior else False,
+                            "Database Access": bool(repo_behavior.database_access) if repo_behavior else False,
+                            "Email Access": bool(repo_behavior.email_access) if repo_behavior else False,
+                            "Browser Automation": bool(repo_behavior.browser_automation) if repo_behavior else False,
+                            "Credential Access": bool(repo_behavior.credential_access) if repo_behavior else False,
+                            "Command Execution": bool(repo_behavior.command_execution) if repo_behavior else False,
+                            "Environment Access": bool(repo_behavior.environment_access) if repo_behavior else False,
+                        }
+                        try:
+                            ai_result = provider.analyze(repo_claims.claimed_purpose, caps)
+                            repo_eval.ai_assessment = ai_result.get("assessment", [])
+                            repo_eval.ai_trust_impact = ai_result.get("trust_impact", 0)
+                            repo_eval.ai_verdict = ai_result.get("verdict", "REVIEW REQUIRED")
+                            
+                            # Deduct from trust score
+                            ai_deduction = abs(repo_eval.ai_trust_impact)
+                            repo_eval.trust_score = max(0, repo_eval.trust_score - ai_deduction)
+                        except Exception as e:
+                            console.print(f"[bold red]AI Analysis Error on {repo_name}:[/] {e}")
+                            raise typer.Exit(code=1)
+                except typer.Exit:
+                    raise
                 except Exception as e:
                     console.print(f"[dim red]Error during claim/behavior evaluation on {repo_name}: {e}[/]")
 
@@ -356,7 +452,9 @@ def scan(
             has_repo_critical = any(f.severity.upper() == "CRITICAL" for f in repo_security_findings)
             has_repo_high = any(f.severity.upper() == "HIGH" for f in repo_security_findings)
 
-            if t_val < 40 or has_repo_critical:
+            if ai and repo_eval and repo_eval.ai_verdict:
+                repo_verdict = repo_eval.ai_verdict
+            elif t_val < 40 or has_repo_critical:
                 repo_verdict = "DANGEROUS"
             elif t_val < 60:
                 repo_verdict = "HIGH RISK"
@@ -494,6 +592,17 @@ def scan(
         except Exception as e:
             console.print(f"[bold red]Error saving HTML report:[/] {e}")
 
+    if is_github:
+        console.print("Repository Source:")
+        console.print("GitHub")
+        console.print()
+        console.print("Repository URL:")
+        console.print(path)
+        console.print()
+        console.print("Repository Name:")
+        console.print(github_repo_name)
+        console.print()
+
     # 1. Output Portfolio Summary
     verdict_style = get_verdict_style(overall_verdict)
     verdict_border = get_verdict_border_style(overall_verdict)
@@ -586,19 +695,14 @@ def scan(
         findings_table.add_column("Location", style="dim green")
         findings_table.add_column("Message", style="white")
 
-        # Aggregate findings
-        aggregated = aggregate_findings(all_flat_findings)
+        # Aggregate findings per repository
+        aggregated_with_repo = []
+        for r in repositories_reports:
+            r_aggregated = aggregate_findings(r.findings)
+            for f in r_aggregated:
+                aggregated_with_repo.append((r.name, f))
 
-        for f in aggregated:
-            # Match repo
-            repo_name = "Unknown"
-            f_path = Path(f.file).resolve()
-            for r in repositories_reports:
-                r_path = Path(r.path).resolve()
-                if r_path == f_path or r_path in f_path.parents:
-                    repo_name = r.name
-                    break
-                    
+        for repo_name, f in aggregated_with_repo:
             sev_style = get_risk_style(RiskLevel(f.severity))
             sev_text = f"[{sev_style}]{f.severity}[/{sev_style}]"
             
@@ -620,38 +724,70 @@ def scan(
     for r in repositories_reports:
         if r.evaluation_report:
             eval_rep = r.evaluation_report
-            categories_str = ", ".join(c.value for c in eval_rep.claimed_categories)
-            
-            # Format observed behaviors list
-            behaviors = []
-            if eval_rep.observed_behavior.network_access: behaviors.append("Network Access")
-            if eval_rep.observed_behavior.filesystem_access: behaviors.append("Filesystem Access")
-            if eval_rep.observed_behavior.credential_access: behaviors.append("Credential Access")
-            if eval_rep.observed_behavior.database_access: behaviors.append("Database Access")
-            if eval_rep.observed_behavior.email_access: behaviors.append("Email Access")
-            if eval_rep.observed_behavior.browser_automation: behaviors.append("Browser Automation")
-            
-            behavior_str = "\n".join(f"  ✓ {b}" for b in behaviors) if behaviors else "  ✓ None"
-            warnings_str = "\n".join(f"  ⚠️ {m}" for m in eval_rep.mismatches) if eval_rep.mismatches else "  ✓ None"
-            
-            trust_style = "bold green" if eval_rep.trust_score >= 80 else ("bold yellow" if eval_rep.trust_score >= 50 else "bold red")
-            
-            trust_text = (
-                f"Claimed Purpose:\n  [bold cyan]{eval_rep.claimed_purpose}[/bold cyan] ({categories_str})\n\n"
-                f"Observed Behavior:\n{behavior_str}\n\n"
-                f"Warnings:\n{warnings_str}\n\n"
-                f"Verdict: [{trust_style}]{eval_rep.verdict} ({eval_rep.trust_score}/100)[/{trust_style}]"
-            )
-            
-            console.print(
-                Panel(
-                    trust_text,
-                    title=f"[bold]Claim vs Behavior Evaluation: {r.name}[/bold]",
-                    border_style="cyan",
-                    box=box.ROUNDED
+            if ai and eval_rep.ai_assessment is not None:
+                # Format observed capabilities list
+                caps_list = []
+                if eval_rep.observed_behavior.network_access: caps_list.append("Network Access")
+                if eval_rep.observed_behavior.filesystem_access: caps_list.append("Filesystem Access")
+                if eval_rep.observed_behavior.command_execution: caps_list.append("Command Execution")
+                if eval_rep.observed_behavior.environment_access: caps_list.append("Environment Access")
+                if eval_rep.observed_behavior.database_access: caps_list.append("Database Access")
+                if eval_rep.observed_behavior.browser_automation: caps_list.append("Browser Automation")
+                
+                caps_str = "\n".join(f"✓ {c}" for c in caps_list) if caps_list else "None"
+                
+                # Format AI Assessment statements
+                assessment_str = "\n\n".join(eval_rep.ai_assessment) if eval_rep.ai_assessment else "No issues detected by AI."
+                
+                console.print("Claimed Purpose:")
+                console.print(eval_rep.claimed_purpose)
+                console.print()
+                console.print("Observed Capabilities:")
+                console.print(caps_str)
+                console.print()
+                console.print("AI Assessment:")
+                console.print()
+                console.print(assessment_str)
+                console.print()
+                console.print("Trust Impact:")
+                console.print(f"{eval_rep.ai_trust_impact}")
+                console.print()
+                console.print("Verdict:")
+                console.print(eval_rep.ai_verdict)
+                console.print()
+            else:
+                categories_str = ", ".join(c.value for c in eval_rep.claimed_categories)
+                
+                # Format observed behaviors list
+                behaviors = []
+                if eval_rep.observed_behavior.network_access: behaviors.append("Network Access")
+                if eval_rep.observed_behavior.filesystem_access: behaviors.append("Filesystem Access")
+                if eval_rep.observed_behavior.credential_access: behaviors.append("Credential Access")
+                if eval_rep.observed_behavior.database_access: behaviors.append("Database Access")
+                if eval_rep.observed_behavior.email_access: behaviors.append("Email Access")
+                if eval_rep.observed_behavior.browser_automation: behaviors.append("Browser Automation")
+                
+                behavior_str = "\n".join(f"  ✓ {b}" for b in behaviors) if behaviors else "  ✓ None"
+                warnings_str = "\n".join(f"  ⚠️ {m}" for m in eval_rep.mismatches) if eval_rep.mismatches else "  ✓ None"
+                
+                trust_style = "bold green" if eval_rep.trust_score >= 80 else ("bold yellow" if eval_rep.trust_score >= 50 else "bold red")
+                
+                trust_text = (
+                    f"Claimed Purpose:\n  [bold cyan]{eval_rep.claimed_purpose}[/bold cyan] ({categories_str})\n\n"
+                    f"Observed Behavior:\n{behavior_str}\n\n"
+                    f"Warnings:\n{warnings_str}\n\n"
+                    f"Verdict: [{trust_style}]{eval_rep.verdict} ({eval_rep.trust_score}/100)[/{trust_style}]"
                 )
-            )
-            console.print()
+                
+                console.print(
+                    Panel(
+                        trust_text,
+                        title=f"[bold]Claim vs Behavior Evaluation: {r.name}[/bold]",
+                        border_style="cyan",
+                        box=box.ROUNDED
+                    )
+                )
+                console.print()
 
     if json_path:
         console.print(f"Report saved to: [bold underline]{json_path}[/]")

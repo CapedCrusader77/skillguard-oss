@@ -58,6 +58,7 @@ skillguard scan <path> [OPTIONS]
 * `--full`: Runs the complete suite including code AST scanners and all supply chain analyzers.
 * `--html`: Generates an interactive, styled HTML dashboard report in `report.html`.
 * `--json`: Generates a structured JSON summary report in `report.json` (or location specified by `--output`).
+* `--ai`: Runs AI-powered Claim vs Behavior analysis to determine if a repository's capabilities align with its claimed purpose.
 * `-o`, `--output <path>`: Specifies custom path for the generated JSON report (defaults to `report.json`).
 
 ### Examples
@@ -70,6 +71,26 @@ skillguard scan ./my-mcp-server
 **Run a full supply chain and secrets audit on a repository, outputting HTML and JSON reports:**
 ```bash
 skillguard scan ./my-plugin-repo --full --html --json
+```
+
+**Scan a remote GitHub repository:**
+```bash
+skillguard scan https://github.com/modelcontextprotocol/servers
+```
+
+**Run a full scan on a remote GitHub repository with HTML and JSON reports:**
+```bash
+skillguard scan https://github.com/langchain-ai/langchain --full --html --json
+```
+
+**Run AI-powered Claim vs Behavior analysis on a local directory:**
+```bash
+skillguard scan ./my-mcp-server --ai
+```
+
+**Run AI-powered analysis on a remote GitHub repository:**
+```bash
+skillguard scan https://github.com/user/repo --ai
 ```
 
 **Show the version of SkillGuard:**
