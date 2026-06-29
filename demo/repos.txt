@@ -1,0 +1,3 @@
+# Sample list of repositories for SkillGuard Benchmark Mode
+https://github.com/amrrish27/sales-nova-ai
+https://github.com/CapedCrusader77/skillguard-oss

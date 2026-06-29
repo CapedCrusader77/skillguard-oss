@@ -3,10 +3,26 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "skillguard"
+name = "skillguard-oss"
 version = "0.1.0"
-description = "Trust but Verify for AI Agent Skills, MCP Servers, and Plugins."
+description = "Trust but Verify for AI Agent Skills, MCP Servers, and Plugins"
 readme = "README.md"
+authors = [
+    { name = "Amrrish", email = "admin@example.com" }
+]
+license = { text = "MIT" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Security",
+]
+keywords = ["security", "ast", "static-analysis", "mcp-server", "ai-agents", "security-scanner"]
 requires-python = ">=3.12"
 dependencies = [
     "typer>=0.12.0",
@@ -14,6 +30,10 @@ dependencies = [
     "pydantic>=2.7.0",
     "gitpython>=3.1.43",
 ]
+
+[project.urls]
+Homepage = "https://github.com/CapedCrusader77/skillguard-oss"
+Issues = "https://github.com/CapedCrusader77/skillguard-oss/issues"
 
 [project.scripts]
 skillguard = "skillguard.app:app"

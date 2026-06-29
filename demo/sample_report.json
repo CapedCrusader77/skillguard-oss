@@ -1,0 +1,404 @@
+{
+  "score": 45,
+  "risk": "MEDIUM",
+  "findings": [
+    {
+      "id": "CMD002",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "category": "COMMAND_EXECUTION",
+      "file": "skillguard/core/github_scanner.py",
+      "line": 60,
+      "message": "subprocess.run detected"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "README.md",
+      "line": 53,
+      "message": "Hardcoded credential detected: Generic Bearer Token"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "demo/sample_report.json",
+      "line": 21,
+      "message": "Hardcoded credential detected: Generic Bearer Token"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "demo/sample_report.json",
+      "line": 30,
+      "message": "Hardcoded credential detected: Generic Bearer Token"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "demo/sample_report.json",
+      "line": 96,
+      "message": "Hardcoded credential detected: Generic Bearer Token"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "demo/sample_report.json",
+      "line": 143,
+      "message": "Hardcoded credential detected: Generic Bearer Token"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "demo/sample_report.json",
+      "line": 188,
+      "message": "Hardcoded credential detected: Generic Bearer Token"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "demo/sample_report.json",
+      "line": 197,
+      "message": "Hardcoded credential detected: Generic Bearer Token"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "skillguard/analyzers/secret_analyzer.py",
+      "line": 64,
+      "message": "Hardcoded credential detected: Generic Bearer Token"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "MEDIUM",
+      "category": "SECRET_ACCESS",
+      "file": "skillguard/core/constants.py",
+      "line": 10,
+      "message": "Hardcoded credential detected: Potential secret assignment in 'SECRET'"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "tests/test_app.py",
+      "line": 117,
+      "message": "Hardcoded credential detected: OpenAI API Key"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "tests/test_supply_chain.py",
+      "line": 99,
+      "message": "Hardcoded credential detected: GitHub PAT"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "tests/test_supply_chain.py",
+      "line": 120,
+      "message": "Hardcoded credential detected: OpenAI API Key"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "SECRET_ACCESS",
+      "file": "tests/test_supply_chain.py",
+      "line": 121,
+      "message": "Hardcoded credential detected: AWS Access Key"
+    },
+    {
+      "id": "SEC101",
+      "severity": "CRITICAL",
+      "confidence": "MEDIUM",
+      "category": "SECRET_ACCESS",
+      "file": "tests/test_supply_chain.py",
+      "line": 122,
+      "message": "Hardcoded credential detected: Potential secret assignment in 'PASSWORD'"
+    }
+  ],
+  "trust_score": {
+    "overall_score": 79,
+    "code_safety": 70,
+    "supply_chain_safety": 100,
+    "secrets_hygiene": 55,
+    "network_risk": 70,
+    "container_security": 100,
+    "top_risks": [
+      "[UNEXPECTED] Undeclared capability: Browser Automation",
+      "[CRITICAL] Hardcoded credential detected: Generic Bearer Token",
+      "[HIGH] subprocess.run detected"
+    ],
+    "most_common_behaviors": [
+      "pathlib.Path detected (38 occurrences)",
+      "os.walk detected (9 occurrences)",
+      "os.environ detected (15 occurrences)"
+    ],
+    "reasons": [
+      "+ Clean workflow configurations",
+      "+ No suspicious Dockerfiles",
+      "- Unexpected capability: Command Execution",
+      "- Unexpected capability: Network Access",
+      "- Unexpected capability: Database Access",
+      "- Unexpected capability: Browser Automation"
+    ]
+  },
+  "evaluation_report": null,
+  "project_type": "Portfolio",
+  "permission_footprint": {
+    "network_access": "MEDIUM",
+    "filesystem_access": "HIGH",
+    "environment_access": "HIGH",
+    "database_access": "HIGH",
+    "browser_automation": "HIGH",
+    "command_execution": "HIGH",
+    "container_management": "NONE",
+    "git_operations": "MEDIUM"
+  },
+  "executive_summary": {
+    "verdict": "DANGEROUS",
+    "message": "The portfolio contains dangerous repositories with severe security exploits."
+  },
+  "repositories": [
+    {
+      "name": "SkillGuard",
+      "path": "D:/Projects/SkillGuard",
+      "score": 45,
+      "risk": "MEDIUM",
+      "trust_score": {
+        "overall_score": 79,
+        "code_safety": 70,
+        "supply_chain_safety": 100,
+        "secrets_hygiene": 55,
+        "network_risk": 70,
+        "container_security": 100,
+        "top_risks": [
+          "[CRITICAL] Hardcoded credential detected: Generic Bearer Token",
+          "[HIGH] subprocess.run detected",
+          "[UNEXPECTED] Undeclared capability: Browser Automation"
+        ],
+        "most_common_behaviors": [
+          "pathlib.Path detected (38 occurrences)",
+          "os.environ detected (15 occurrences)",
+          "os.walk detected (9 occurrences)"
+        ],
+        "reasons": [
+          "+ No suspicious Dockerfiles",
+          "+ Clean workflow configurations",
+          "- Unexpected capability: Browser Automation",
+          "- Unexpected capability: Command Execution",
+          "- Unexpected capability: Database Access",
+          "- Unexpected capability: Network Access"
+        ]
+      },
+      "permission_footprint": {
+        "network_access": "MEDIUM",
+        "filesystem_access": "HIGH",
+        "environment_access": "HIGH",
+        "database_access": "HIGH",
+        "browser_automation": "HIGH",
+        "command_execution": "HIGH",
+        "container_management": "NONE",
+        "git_operations": "MEDIUM"
+      },
+      "findings": [
+        {
+          "id": "CMD002",
+          "severity": "HIGH",
+          "confidence": "HIGH",
+          "category": "COMMAND_EXECUTION",
+          "file": "skillguard/core/github_scanner.py",
+          "line": 60,
+          "message": "subprocess.run detected"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "README.md",
+          "line": 53,
+          "message": "Hardcoded credential detected: Generic Bearer Token"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "demo/sample_report.json",
+          "line": 21,
+          "message": "Hardcoded credential detected: Generic Bearer Token"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "demo/sample_report.json",
+          "line": 30,
+          "message": "Hardcoded credential detected: Generic Bearer Token"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "demo/sample_report.json",
+          "line": 96,
+          "message": "Hardcoded credential detected: Generic Bearer Token"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "demo/sample_report.json",
+          "line": 143,
+          "message": "Hardcoded credential detected: Generic Bearer Token"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "demo/sample_report.json",
+          "line": 188,
+          "message": "Hardcoded credential detected: Generic Bearer Token"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "demo/sample_report.json",
+          "line": 197,
+          "message": "Hardcoded credential detected: Generic Bearer Token"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "skillguard/analyzers/secret_analyzer.py",
+          "line": 64,
+          "message": "Hardcoded credential detected: Generic Bearer Token"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "MEDIUM",
+          "category": "SECRET_ACCESS",
+          "file": "skillguard/core/constants.py",
+          "line": 10,
+          "message": "Hardcoded credential detected: Potential secret assignment in 'SECRET'"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "tests/test_app.py",
+          "line": 117,
+          "message": "Hardcoded credential detected: OpenAI API Key"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "tests/test_supply_chain.py",
+          "line": 99,
+          "message": "Hardcoded credential detected: GitHub PAT"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "tests/test_supply_chain.py",
+          "line": 120,
+          "message": "Hardcoded credential detected: OpenAI API Key"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "HIGH",
+          "category": "SECRET_ACCESS",
+          "file": "tests/test_supply_chain.py",
+          "line": 121,
+          "message": "Hardcoded credential detected: AWS Access Key"
+        },
+        {
+          "id": "SEC101",
+          "severity": "CRITICAL",
+          "confidence": "MEDIUM",
+          "category": "SECRET_ACCESS",
+          "file": "tests/test_supply_chain.py",
+          "line": 122,
+          "message": "Hardcoded credential detected: Potential secret assignment in 'PASSWORD'"
+        }
+      ],
+      "evaluation_report": {
+        "claimed_purpose": "Trust but Verify for AI Agent Skills, MCP Servers, and Plugins",
+        "claimed_categories": [
+          "Agent Framework",
+          "Database",
+          "Filesystem",
+          "GitHub",
+          "Monitoring"
+        ],
+        "observed_behavior": {
+          "filesystem_access": true,
+          "network_access": true,
+          "database_access": true,
+          "email_access": true,
+          "browser_automation": true,
+          "credential_access": true,
+          "command_execution": true,
+          "environment_access": true
+        },
+        "mismatches": [
+          "Undeclared browser automation",
+          "Undeclared email usage"
+        ],
+        "trust_score": 55,
+        "verdict": "Behavior partially exceeds declared functionality",
+        "ai_assessment": null,
+        "ai_trust_impact": null,
+        "ai_verdict": null
+      },
+      "project_type": "Security Scanner",
+      "verdict": "DANGEROUS"
+    }
+  ],
+  "portfolio_summary": {
+    "total_repositories": 1,
+    "total_files": 61,
+    "overall_trust_score": 79,
+    "overall_risk_score": 45,
+    "overall_risk_level": "MEDIUM",
+    "verdict": "DANGEROUS",
+    "message": "The portfolio contains dangerous repositories with severe security exploits."
+  }
+}

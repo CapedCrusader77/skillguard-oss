@@ -794,12 +794,260 @@ def _run_scan(
     if html_path:
         console.print(f"HTML Report saved to: [bold underline]{html_path}[/]")
     console.print()
+    console.print()
 
     # Exit with code 1 if overall portfolio verdict is DANGEROUS
     if overall_verdict == "DANGEROUS":
         raise typer.Exit(code=1)
     else:
         raise typer.Exit(code=0)
+
+@app.command()
+def benchmark(
+    repos_file: str = typer.Argument(
+        ...,
+        help="Path to the file containing GitHub repository URLs to scan (one per line)",
+    ),
+    output: str = typer.Option(
+        "benchmark_report.html",
+        "--output",
+        "-o",
+        help="Path to save the HTML benchmark report"
+    ),
+    full: bool = typer.Option(
+        False,
+        "--full",
+        help="Run full analysis (includes AST scanners and all supply chain analyzers)"
+    )
+):
+    """
+    Scan multiple repositories listed in a text file and generate a comparison benchmark report.
+    """
+    console.print()
+    header_content = (
+        "[bold cyan]SKILLGUARD BENCHMARK[/bold cyan]\n"
+        "[italic dim]Multi-Repository Vulnerability and Trust Comparison[/italic dim]"
+    )
+    console.print(Panel(Align.center(header_content), border_style="cyan", box=box.ROUNDED))
+    console.print()
+
+    file_path = Path(repos_file).resolve()
+    if not file_path.exists():
+        console.print(f"[bold red]Error:[/] File does not exist: {repos_file}")
+        raise typer.Exit(code=1)
+
+    urls = []
+    with open(file_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                urls.append(line)
+
+    if not urls:
+        console.print("[yellow]WARNING: No repository URLs found in the file.[/yellow]")
+        raise typer.Exit(code=0)
+
+    console.print(f"Found [bold cyan]{len(urls)}[/bold cyan] repositories to benchmark.")
+    console.print()
+
+    from skillguard.reports.benchmark_report import write_benchmark_report
+    from skillguard.core.github_scanner import (
+        is_github_url, clone_repository, cleanup_repository, get_repository_name,
+        GitHubScannerError
+    )
+    import tempfile
+    
+    reports: List[RepositoryReport] = []
+    profiler = ProjectProfiler()
+
+    for idx, url in enumerate(urls, 1):
+        console.print(f"[bold blue][{idx}/{len(urls)}] Scanning repository:[/] [cyan]{url}[/cyan]")
+        if not is_github_url(url):
+            console.print(f"  [bold red]Error:[/] Invalid GitHub URL: {url}. Skipping.")
+            continue
+
+        try:
+            repo_name = get_repository_name(url)
+        except Exception:
+            repo_name = f"repo-{idx}"
+
+        temp_dir_obj = None
+        try:
+            temp_dir_obj = tempfile.TemporaryDirectory(prefix="skillguard_bench_")
+            scan_path = Path(temp_dir_obj.name)
+            
+            console.print(f"  Cloning to temporary directory...")
+            clone_repository(url, str(scan_path))
+            
+            # Run scan targets discovery
+            files, lang_stats, _ = get_scan_targets(scan_path)
+            if not files:
+                console.print("  [yellow]No supported files found to scan. Skipping.[/yellow]")
+                continue
+
+            from skillguard.core.repository_discovery import discover_files
+            _, git_repos, flutter_roots = discover_files(scan_path)
+            repo_files_map = group_files_by_repository(scan_path, files, git_repos, flutter_roots)
+
+            repo_root = next(iter(repo_files_map.keys())) if repo_files_map else scan_path
+            repo_files = repo_files_map.get(repo_root, files)
+
+            repo_findings = []
+            
+            # Execute AST scanners for this repo's files
+            for file_path in repo_files:
+                try:
+                    ext = file_path.suffix.lower()
+                    if ext == ".py":
+                        file_findings = scan_file(file_path, repo_root)
+                    elif ext == ".js":
+                        file_findings = JavaScriptScanner(file_path, repo_root).scan()
+                    elif ext == ".ts":
+                        file_findings = TypeScriptScanner(file_path, repo_root).scan()
+                    elif ext == ".dart":
+                        file_findings = DartScanner(file_path, repo_root).scan()
+                    else:
+                        file_findings = []
+                    repo_findings.extend(file_findings)
+                except Exception:
+                    pass
+
+            if full:
+                for analyzer in analyzer_registry:
+                    try:
+                        analyzer_findings = analyzer.analyze(repo_root)
+                        repo_findings.extend(analyzer_findings)
+                    except Exception:
+                        pass
+
+            # Classify project type
+            repo_project_type = profiler.profile_project(repo_root)
+
+            # Evaluate results
+            repo_score, repo_risk_level = evaluate_risk(repo_findings, repo_root)
+            repo_trust_report = calculate_trust_score(repo_findings, repo_root)
+
+            try:
+                repo_behavior = BehaviorAnalyzer().analyze_behavior(repo_root, repo_findings)
+            except Exception:
+                repo_behavior = None
+
+            # Permission footprint
+            net_level = PermissionLevel.NONE
+            if repo_behavior and repo_behavior.network_access:
+                net_rules = {f.id for f in repo_findings if f.category == "NETWORK"}
+                if any(r in {"NET001", "NET003", "NET004", "NET005", "NET007", "NET102"} for r in net_rules):
+                    net_level = PermissionLevel.HIGH
+                else:
+                    net_level = PermissionLevel.MEDIUM
+            elif any(f.id == "NET201" for f in repo_findings):
+                net_level = PermissionLevel.MEDIUM
+
+            filesystem_level = PermissionLevel.NONE
+            if repo_behavior and repo_behavior.filesystem_access:
+                file_rules = {f.id for f in repo_findings if f.category == "FILE_SYSTEM"}
+                if any(r in {"FIL003", "FIL102", "DKR005"} for r in file_rules):
+                    filesystem_level = PermissionLevel.HIGH
+                else:
+                    filesystem_level = PermissionLevel.MEDIUM
+
+            environment_level = PermissionLevel.NONE
+            if repo_behavior and repo_behavior.credential_access:
+                environment_level = PermissionLevel.HIGH
+            elif any(f.category == "SECRET_ACCESS" or f.id in {"SEC001", "SEC002", "SEC102"} for f in repo_findings):
+                environment_level = PermissionLevel.MEDIUM
+
+            database_level = PermissionLevel.NONE
+            if repo_behavior and repo_behavior.database_access:
+                database_level = PermissionLevel.HIGH
+            elif "db" in str([f.message for f in repo_findings]).lower():
+                database_level = PermissionLevel.MEDIUM
+
+            browser_level = PermissionLevel.NONE
+            if repo_behavior and repo_behavior.browser_automation:
+                browser_level = PermissionLevel.HIGH
+
+            command_level = PermissionLevel.NONE
+            cmd_rules = {f.id for f in repo_findings if f.category == "COMMAND_EXECUTION"}
+            if cmd_rules:
+                command_level = PermissionLevel.HIGH
+
+            container_level = PermissionLevel.NONE
+            docker_rules = {f.id for f in repo_findings if f.id.startswith("DKR")}
+            if docker_rules:
+                if any(r in {"DKR003", "DKR005", "DKR006"} for r in docker_rules):
+                    container_level = PermissionLevel.HIGH
+                else:
+                    container_level = PermissionLevel.MEDIUM
+
+            git_level = PermissionLevel.NONE
+            gha_rules = {f.id for f in repo_findings if f.id.startswith("GHA")}
+            if gha_rules:
+                if any(r in {"GHA001", "GHA003"} for r in gha_rules):
+                    git_level = PermissionLevel.HIGH
+                else:
+                    git_level = PermissionLevel.MEDIUM
+
+            repo_footprint = PermissionFootprint(
+                network_access=net_level,
+                filesystem_access=filesystem_level,
+                environment_access=environment_level,
+                database_access=database_level,
+                browser_automation=browser_level,
+                command_execution=command_level,
+                container_management=container_level,
+                git_operations=git_level
+            )
+
+            repo_security_findings = [f for f in repo_findings if f.severity.upper() in {"HIGH", "CRITICAL"}]
+
+            # Verdict Logic
+            t_val = repo_trust_report.overall_score
+            has_repo_critical = any(f.severity.upper() == "CRITICAL" for f in repo_security_findings)
+            has_repo_high = any(f.severity.upper() == "HIGH" for f in repo_security_findings)
+
+            if t_val < 40 or has_repo_critical:
+                repo_verdict = "DANGEROUS"
+            elif t_val < 60:
+                repo_verdict = "HIGH RISK"
+            elif t_val >= 85 and repo_risk_level == RiskLevel.LOW and not has_repo_high:
+                repo_verdict = "SAFE"
+            else:
+                repo_verdict = "REVIEW RECOMMENDED"
+
+            repo_report = RepositoryReport(
+                name=repo_name,
+                path=url,
+                score=repo_score,
+                risk=repo_risk_level,
+                trust_score=repo_trust_report,
+                permission_footprint=repo_footprint,
+                findings=repo_security_findings,
+                evaluation_report=None,
+                project_type=repo_project_type.value,
+                verdict=repo_verdict
+            )
+            reports.append(repo_report)
+            console.print(f"  [bold green]Scan Success![/] Verdict: [bold]{repo_verdict}[/] | Trust Score: [bold]{t_val}/100[/]")
+            
+        except Exception as e:
+            console.print(f"  [bold red]Error benchmarking {repo_name}:[/] {e}")
+        finally:
+            if temp_dir_obj:
+                try:
+                    cleanup_repository(temp_dir_obj.name)
+                except Exception:
+                    pass
+        console.print()
+
+    # Generate benchmark report
+    try:
+        report_path = write_benchmark_report(reports, output)
+        console.print(f"[bold green]Benchmark completed successfully![/]")
+        console.print(f"Report saved to: [bold underline]{report_path}[/]")
+    except Exception as e:
+        console.print(f"[bold red]Error generating benchmark report:[/] {e}")
+        raise typer.Exit(code=1)
 
 if __name__ == "__main__":
     app()
