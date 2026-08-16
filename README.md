@@ -1,32 +1,74 @@
 # 🛡️ SkillGuard OSS
 
-> **"Trust but Verify for AI Agent Skills, MCP Servers, and Plugins."**
+SkillGuard OSS is an AI agent supply-chain security scanner that analyzes MCP servers, plugins, agent tools, workflows, dependencies, and source code before execution.
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/CapedCrusader77/skillguard-oss/release.yml?branch=main&style=flat-square)](https://github.com/CapedCrusader77/skillguard-oss/actions)
-[![PyPI Version](https://img.shields.io/pypi/v/skillguard-oss?color=blue&style=flat-square)](https://pypi.org/project/skillguard-oss)
-[![License](https://img.shields.io/github/license/CapedCrusader77/skillguard-oss?color=green&style=flat-square)](LICENSE)
-[![Trust Score](https://raw.githubusercontent.com/CapedCrusader77/skillguard-oss/main/docs/badges/trust_score_badge.svg)](https://github.com/CapedCrusader77/skillguard-oss)
-[![Security Findings](https://raw.githubusercontent.com/CapedCrusader77/skillguard-oss/main/docs/badges/security_findings_badge.svg)](https://github.com/CapedCrusader77/skillguard-oss)
+Think of it as **"VirusTotal for AI Agents."**
 
-SkillGuard scans AI agent plugins, MCP (Model Context Protocol) servers, and custom agent skills before installation. It identifies security vulnerabilities, dangerous behaviors, and permission mismatches via AST static analysis and comprehensive supply chain checks.
+---
 
-The ultimate long-term goal of SkillGuard is to become the **"VirusTotal for AI Agent Tools."**
+## 🚀 Quick Start
+
+```bash
+pip install skillguard-oss
+
+skillguard scan https://github.com/modelcontextprotocol/servers --html
+```
+
+Example Output:
+
+```text
+Trust Score: 89
+
+Risk Level: LOW
+
+Permission Footprint:
+✓ Network Access
+✓ Environment Access
+
+Warnings:
+* Unpinned GitHub Actions
+* Unexpected Filesystem Access
+```
+
+---
+
+## 📊 Dashboard Preview
+
+![Dashboard](docs/images/dashboard.png)
 
 ---
 
 ## 📖 Table of Contents
-1. [Overview](#-overview)
-2. [Features](#-features)
-3. [Architecture](#-architecture)
-4. [Installation](#-installation)
-5. [Usage](#-usage)
-6. [Benchmark Mode](#-benchmark-mode)
-7. [GitHub Action Usage](#-github-action-usage)
-8. [Trust Scoring & Deductions](#-trust-scoring--deductions)
-9. [AI Claim-vs-Behavior Analysis](#-ai-claim-vs-behavior-analysis)
-10. [Roadmap](#-roadmap)
-11. [Contributing](#-contributing)
-12. [License](#-license)
+1. [Why SkillGuard?](#-why-skillguard)
+2. [Overview](#-overview)
+3. [Features](#-features)
+4. [Architecture](#-architecture)
+5. [Installation](#-installation)
+6. [Usage](#-usage)
+7. [Benchmark Mode](#-benchmark-mode)
+8. [GitHub Action Usage](#-github-action-usage)
+9. [Trust Scoring & Deductions](#-trust-scoring--deductions)
+10. [AI Claim-vs-Behavior Analysis](#-ai-claim-vs-behavior-analysis)
+11. [Roadmap](#-roadmap)
+12. [Contributing](#-contributing)
+13. [License](#-license)
+
+---
+
+## ❓ Why SkillGuard?
+
+Traditional security scanners focus on source code vulnerabilities.
+
+SkillGuard focuses on AI agent trust.
+
+It answers questions such as:
+* Does this MCP server access files unexpectedly?
+* Does this plugin execute shell commands?
+* Does the observed behavior match the claimed purpose?
+* Does the project contain supply-chain risks?
+* Should I trust this AI tool before running it?
+
+SkillGuard combines static analysis, supply-chain auditing, trust scoring, and AI-powered behavior assessment into a single workflow.
 
 ---
 
@@ -195,12 +237,13 @@ jobs:
 
 ## 🛡️ Trust Scoring & Deductions
 
-Trust Scores start at 100 for each of the 5 categories. Deductions are subtracted based on the severity of the findings:
+Trust Scores start at 100 for each of the 5 categories. Deductions are subtracted based on the severity of findings and project profile capabilities:
 
 * 🔴 **CRITICAL** finding: **-25** points
 * 🟠 **HIGH** finding: **-15** points
-* 🟡 **MEDIUM** finding: **-10** points
-* 🟢 **LOW** finding: **-5** points
+* ⚠️ **Unexpected Capability** (e.g. undeclared filesystem or network access for the profiled project type): **-15** points
+
+*Note: Medium and Low severity findings are flagged as warning indicators but do not directly deduct points from the category trust scores.*
 
 The final overall **Trust Score** is the average of these 5 category scores.
 
@@ -216,11 +259,11 @@ If a developer claims their plugin is a simple calculator, but AST scanning dete
 
 ## 🛣️ Roadmap
 
-- [x] Multi-language AST scanning (Python, JS, TS, Dart)
 - [x] Reusable GitHub Action with PR comments
-- [x] PyPI packaging and distribution
-- [x] Benchmark command for multi-repo scans
 - [ ] Integration with SARIF format for GitHub Security Alerts
+- [x] PyPI packaging and distribution
+- [x] Multi-language AST scanning (Python, JS, TS, Dart)
+- [x] Benchmark command for multi-repo scans
 - [ ] Static taint analysis for data leak detection
 - [ ] Sandbox runtime execution monitoring
 
