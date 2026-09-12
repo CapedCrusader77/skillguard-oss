@@ -121,7 +121,10 @@ class RuntimeCapture:
             except OSError as exc:
                 return RuntimeProfile(target=str(target), status="could_not_execute", error=str(exc))
 
-            profile = self._parse_traces(target, trace_dir)
+            ignored_processes = {str(Path(bwrap).resolve())}
+            if inner_command:
+                ignored_processes.add(str(Path(inner_command[0]).resolve()))
+            profile = self._parse_traces(target, trace_dir, ignored_processes=ignored_processes)
             profile.exit_code = process.returncode
             profile.timed_out = timed_out
             profile.duration_seconds = round(time.monotonic() - started, 3)
@@ -200,7 +203,7 @@ class RuntimeCapture:
         return args + inner_command
 
     @classmethod
-    def _parse_traces(cls, target: Path, trace_dir: str) -> RuntimeProfile:
+    def _parse_traces(cls, target: Path, trace_dir: str, *, ignored_processes: set[str] | None = None) -> RuntimeProfile:
         profile = RuntimeProfile(target=str(target), status="not_run")
         files: dict[str, set[str]] = {}
         networks: dict[tuple[str, str, int | None], RuntimeNetworkAccess] = {}
@@ -213,12 +216,17 @@ class RuntimeCapture:
             for line in lines:
                 cls._parse_file(line, files)
                 cls._parse_network(line, networks)
-                cls._parse_process(line, processes)
+                cls._parse_process(line, processes, ignored_processes or set())
         profile.files_touched = [RuntimeFileAccess(path=path, modes=sorted(modes)) for path, modes in sorted(files.items())]
         profile.network_connections = list(networks.values())
         profile.subprocesses = list(processes.values())
-        profile.system_resources = sorted({path for path in files if path.startswith(("/proc", "/sys", "/dev", "/etc/passwd", "/etc/shadow", "/root", "/home"))})
+        profile.system_resources = sorted({path for path in files if cls._is_sensitive_system_resource(path)})
         return profile
+
+    @staticmethod
+    def _is_sensitive_system_resource(path: str) -> bool:
+        lower = path.lower().replace("\\", "/")
+        return lower.startswith(("/etc/passwd", "/etc/shadow", "/root/", "/home/"))
 
     @staticmethod
     def _parse_file(line: str, files: dict[str, set[str]]) -> None:
@@ -238,11 +246,13 @@ class RuntimeCapture:
         networks[(operation, address, port)] = RuntimeNetworkAccess(operation=operation, address=address, port=port, family=family)
 
     @staticmethod
-    def _parse_process(line: str, processes: dict[str, RuntimeProcess]) -> None:
+    def _parse_process(line: str, processes: dict[str, RuntimeProcess], ignored_processes: set[str]) -> None:
         match = re.search(r"\bexecve\(\"([^\"]+)\",\s*\[([^\]]*)\]", line)
         if not match:
             return
         executable = match.group(1)
+        if executable in ignored_processes:
+            return
         arguments = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', match.group(2))
         processes.setdefault(executable, RuntimeProcess(executable=executable, arguments=arguments))
 

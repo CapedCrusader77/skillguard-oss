@@ -17,9 +17,9 @@ an endpoint, a subprocess, or incomplete execution.
 | Conflicting claim | 10 | Contradictory documentation reduces confidence in the declared contract and needs review. |
 | Incomplete execution | 20 | A crash or timeout means the observed run is not a pass. It is not scored as a capability mismatch by itself. |
 
-Weights are intentionally additive and capped at a 100-point delta. Repeated
-events remain discrete findings, but the cap prevents a noisy single run from
-producing an unbounded score. A sandbox-unavailable result receives a visible
+Weights are intentionally additive. The displayed score is clamped at zero,
+but the raw negative trust delta remains unbounded so additional evidence is
+not hidden when a run already reaches the floor. A sandbox-unavailable result receives a visible
 status finding with zero mismatch weight, but it also has
 `verification_available: false`, `verification_score: null`, and
 `trust_delta: null`; it is never eligible for a clean-runtime score or a

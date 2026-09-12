@@ -82,7 +82,9 @@ def verify_runtime(claims: ClaimProfile, runtime: RuntimeProfile) -> RuntimeVeri
             verdict="Runtime verification unavailable or incomplete",
         )
 
-    total = min(100, sum(f.weight for f in findings))
+    total = sum(f.weight for f in findings)
+    # Keep the raw delta for comparison and auditability even when the
+    # user-facing score bottoms out at zero.
     delta = -total
     score = max(0, 100 + delta)
     verdict = "Behavior matches declared claims" if not findings else (
