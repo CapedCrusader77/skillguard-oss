@@ -16,11 +16,14 @@ jobs:
           python-version: "3.12"
       - name: Install sandbox tools
         run: sudo apt-get update && sudo apt-get install -y bubblewrap strace
-      - name: Install project and test dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pytest
-          python -m pip install -e .
+      - name: Show Python and pip versions
+        run: python --version && python -m pip --version
+      - name: Install test runner
+        run: python -m pip install --upgrade pytest
+      - name: Install runtime dependencies
+        run: python -m pip install typer rich pydantic gitpython
+      - name: Install SkillGuard without resolving metadata
+        run: python -m pip install --no-deps -e .
       - name: Run full pytest suite
         run: python -m pytest -q
       - name: Require malicious synthetic tool mismatch
@@ -36,8 +39,10 @@ jobs:
           python-version: "3.12"
       - name: Install sandbox tools
         run: sudo apt-get update && sudo apt-get install -y bubblewrap strace git
-      - name: Install SkillGuard
-        run: python -m pip install -e .
+      - name: Install SkillGuard dependencies
+        run: python -m pip install typer rich pydantic gitpython
+      - name: Install SkillGuard without resolving metadata
+        run: python -m pip install --no-deps -e .
       - name: Run bounded real-repository smoke benchmark
         run: skillguard benchmark-runtime benchmark_mcp_smoke.txt --output benchmark_smoke_results.json --runtime-timeout 10
       - name: Upload smoke benchmark
