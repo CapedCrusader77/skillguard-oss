@@ -156,7 +156,10 @@ class RuntimeCapture:
 
     @staticmethod
     def _sandbox_command(bwrap: str, root: Path, inner_command: list[str]) -> list[str]:
-        args = [bwrap, "--die-with-parent", "--new-session", "--unshare-all", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--ro-bind", str(root), "/workspace"]
+        # The workspace is already a disposable copy created by capture(); a
+        # writable bind here lets the trace observe writes without exposing
+        # the caller's checkout to the target process.
+        args = [bwrap, "--die-with-parent", "--new-session", "--unshare-all", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--bind", str(root), "/workspace"]
         # Modern Ubuntu systems make /bin, /lib, and /lib64 symlinks into
         # /usr.  Recreating those links is more portable than trying to bind
         # mount a symlink onto itself inside bwrap's empty root.
