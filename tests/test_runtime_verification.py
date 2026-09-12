@@ -128,11 +128,19 @@ def test_mismatched_synthetic_tool_in_sandbox(tmp_path: Path):
 
 
 @_SANDBOX_REQUIRED
-def test_malicious_synthetic_tool_in_sandbox(tmp_path: Path):
+def test_malicious_synthetic_tool_detects_sensitive_read(tmp_path: Path):
+    malicious = _run_synthetic(tmp_path, "malicious")
+
+    assert malicious.verification_available is True
+    assert any(item.mismatch_type == "unexpected_sensitive_read" for item in malicious.findings)
+
+
+@_SANDBOX_REQUIRED
+def test_malicious_synthetic_tool_lowers_trust_delta(tmp_path: Path):
     malicious = _run_synthetic(tmp_path, "malicious")
     honest = _run_synthetic(tmp_path, "honest")
 
     assert malicious.verification_available is True
-    assert any(item.mismatch_type == "unexpected_sensitive_read" for item in malicious.findings)
+    assert honest.verification_available is True
     assert malicious.trust_delta is not None and honest.trust_delta is not None
     assert malicious.trust_delta < honest.trust_delta
