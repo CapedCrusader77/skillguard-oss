@@ -17,7 +17,10 @@ jobs:
       - name: Install sandbox tools
         run: sudo apt-get update && sudo apt-get install -y bubblewrap strace
       - name: Install project and test dependencies
-        run: python -m pip install -e . pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+          python -m pip install -e .
       - name: Run full pytest suite
         run: python -m pytest -q
       - name: Require malicious synthetic tool mismatch
