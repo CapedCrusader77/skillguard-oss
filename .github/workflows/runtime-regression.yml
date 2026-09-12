@@ -16,6 +16,12 @@ jobs:
           python-version: "3.12"
       - name: Install sandbox tools
         run: sudo apt-get update && sudo apt-get install -y bubblewrap strace
+      - name: Verify bwrap namespace support
+        run: |
+          bwrap --unshare-all --proc /proc --dev /dev \
+            --ro-bind /usr /usr --ro-bind /etc /etc \
+            --symlink usr/bin /bin --symlink usr/lib /lib \
+            --symlink usr/lib64 /lib64 /usr/bin/true
       - name: Show Python and pip versions
         run: python --version && python -m pip --version
       - name: Install test runner

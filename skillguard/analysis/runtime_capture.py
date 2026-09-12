@@ -147,9 +147,23 @@ class RuntimeCapture:
     @staticmethod
     def _sandbox_command(bwrap: str, root: Path, inner_command: list[str]) -> list[str]:
         args = [bwrap, "--die-with-parent", "--new-session", "--unshare-all", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--ro-bind", str(root), "/workspace"]
-        for system_path in ("/usr", "/usr/local", "/bin", "/lib", "/lib64", "/etc"):
+        # Modern Ubuntu systems make /bin, /lib, and /lib64 symlinks into
+        # /usr.  Recreating those links is more portable than trying to bind
+        # mount a symlink onto itself inside bwrap's empty root.
+        for system_path in ("/usr", "/etc"):
             if Path(system_path).exists():
                 args.extend(["--ro-bind", system_path, system_path])
+        for link_path in ("/bin", "/sbin", "/lib", "/lib64"):
+            link = Path(link_path)
+            if not link.exists():
+                continue
+            if link.is_symlink():
+                destination = os.readlink(link_path)
+                if destination.startswith("/"):
+                    destination = destination[1:]
+                args.extend(["--symlink", destination, link_path])
+            else:
+                args.extend(["--ro-bind", link_path, link_path])
         # A CI virtualenv may live outside /usr. Bind only its environment,
         # creating destination parents first, rather than exposing /home or
         # another broad host directory.
