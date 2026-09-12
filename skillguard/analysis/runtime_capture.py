@@ -164,6 +164,11 @@ class RuntimeCapture:
                 args.extend(["--symlink", destination, link_path])
             else:
                 args.extend(["--ro-bind", link_path, link_path])
+        # GitHub-hosted runners may require bwrap to be launched with sudo to
+        # create namespaces.  Even then, never run the target as root inside
+        # the sandbox; map it to the unprivileged nobody account.
+        if hasattr(os, "geteuid") and os.geteuid() == 0:
+            args.extend(["--uid", "65534", "--gid", "65534"])
         # A CI virtualenv may live outside /usr. Bind only its environment,
         # creating destination parents first, rather than exposing /home or
         # another broad host directory.

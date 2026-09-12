@@ -18,10 +18,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y bubblewrap strace
       - name: Verify bwrap namespace support
         run: |
-          bwrap --unshare-all --proc /proc --dev /dev \
+          sudo bwrap --unshare-all --proc /proc --dev /dev \
             --ro-bind /usr /usr --ro-bind /etc /etc \
             --symlink usr/bin /bin --symlink usr/lib /lib \
-            --symlink usr/lib64 /lib64 /usr/bin/true
+            --symlink usr/lib64 /lib64 --uid 65534 --gid 65534 /usr/bin/true
       - name: Show Python and pip versions
         run: python --version && python -m pip --version
       - name: Install test runner
@@ -38,7 +38,7 @@ jobs:
           python -m pytest -q --junitxml=pytest-results.xml 2>&1 | tee pytest.log
       - name: Require malicious synthetic tool mismatch
         if: always()
-        run: python -m pytest -q tests/test_runtime_verification.py -k three_synthetic_tools_in_sandbox
+        run: sudo -E "$(command -v python)" -m pytest -q tests/test_runtime_verification.py -k three_synthetic_tools_in_sandbox
       - name: Upload pytest diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -61,12 +61,18 @@ jobs:
           python-version: "3.12"
       - name: Install sandbox tools
         run: sudo apt-get update && sudo apt-get install -y bubblewrap strace git
+      - name: Verify bwrap namespace support
+        run: |
+          sudo bwrap --unshare-all --proc /proc --dev /dev \
+            --ro-bind /usr /usr --ro-bind /etc /etc \
+            --symlink usr/bin /bin --symlink usr/lib /lib \
+            --symlink usr/lib64 /lib64 --uid 65534 --gid 65534 /usr/bin/true
       - name: Install SkillGuard dependencies
         run: python -m pip install typer rich pydantic gitpython
       - name: Install SkillGuard without resolving metadata
         run: python -m pip install --no-deps -e .
       - name: Run bounded real-repository smoke benchmark
-        run: skillguard benchmark-runtime benchmark_mcp_smoke.txt --output benchmark_smoke_results.json --runtime-timeout 10
+        run: sudo -E "$(command -v skillguard)" benchmark-runtime benchmark_mcp_smoke.txt --output benchmark_smoke_results.json --runtime-timeout 10
       - name: Upload smoke benchmark
         uses: actions/upload-artifact@v4
         with:
