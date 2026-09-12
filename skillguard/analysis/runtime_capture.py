@@ -86,16 +86,26 @@ class RuntimeCapture:
         except ValueError as exc:
             return RuntimeProfile(target=str(target), status="could_not_execute", error=str(exc))
 
-        with tempfile.TemporaryDirectory(prefix="skillguard_trace_") as trace_dir:
+        with tempfile.TemporaryDirectory(prefix="skillguard_trace_") as trace_dir, tempfile.TemporaryDirectory(prefix="skillguard_workspace_") as workspace_dir:
             trace_prefix = str(Path(trace_dir) / "trace")
-            sandbox_command = self._sandbox_command(bwrap, root, inner_command)
+            sandbox_root = Path(workspace_dir) / "repo"
+            try:
+                shutil.copytree(
+                    root,
+                    sandbox_root,
+                    symlinks=True,
+                    ignore=shutil.ignore_patterns(".git", "__pycache__", "node_modules"),
+                )
+            except OSError as exc:
+                return RuntimeProfile(target=str(target), status="could_not_execute", error=f"Could not stage sandbox workspace: {exc}")
+            sandbox_command = self._sandbox_command(bwrap, sandbox_root, inner_command)
             full_command = [strace, "-ff", "-o", trace_prefix, "-s", "256", "-e", "trace=file,network,process", *sandbox_command]
             payload = json.dumps(input_payload or {"tool": "skillguard", "arguments": {}}) + "\n"
             started = time.monotonic()
             try:
                 process = subprocess.Popen(
                     full_command,
-                    cwd=str(root),
+                    cwd=str(sandbox_root),
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
