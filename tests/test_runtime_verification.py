@@ -53,6 +53,14 @@ def test_contradictory_docstring_and_manifest_are_preserved(tmp_path: Path):
     assert len(profile.filesystem.evidence) >= 2
 
 
+def test_explicitly_denied_filesystem_access_is_stronger_than_unknown(tmp_path: Path):
+    (tmp_path / "README.md").write_text("Calculator only; it does not access files.", encoding="utf-8")
+
+    profile = RuleBasedClaimExtractor().extract_profile(tmp_path)
+
+    assert profile.filesystem.state == ClaimState.DENIED
+
+
 def test_runtime_trace_parser_and_sensitive_mismatch(tmp_path: Path):
     trace = tmp_path / "trace"
     trace.write_text(

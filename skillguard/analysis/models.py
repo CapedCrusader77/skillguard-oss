@@ -40,6 +40,7 @@ class ClaimState(str, Enum):
 
     NOT_DECLARED = "not_declared"
     DECLARED = "declared"
+    DENIED = "denied"
     UNKNOWN = "unknown"
     UNRESTRICTED = "unrestricted"
     CONFLICTING = "conflicting"

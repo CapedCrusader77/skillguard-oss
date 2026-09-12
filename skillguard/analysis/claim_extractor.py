@@ -41,6 +41,11 @@ _READ_RE = re.compile(r"\b(read|reads|reading|view|views|list|lists|inspect|look
 _WRITE_RE = re.compile(r"\b(write|writes|writing|create|creates|edit|update|modify|save|saves|send|delete|remove)\b", re.I)
 _DOMAIN_RE = re.compile(r"(?:https?://)?([a-z0-9][a-z0-9.-]+\.[a-z]{2,})(?::(\d+))?", re.I)
 _PATH_RE = re.compile(r"(?<![\w])(?:~|/|\.\.?/)[\w./${}*?\-]+")
+_FILE_DENIAL_RE = re.compile(
+    r"(?:\b(?:does|do|did|will|would|should|must)\s+not\s+(?:access|use|read|write|touch|modify)\s+(?:any\s+)?(?:files?|filesystem|file\s+system|directories?|folders?|disk)\b"
+    r"|\bno\s+(?:files?|filesystem|file\s+system|directories?|folders?|disk)\s+(?:access|use|reading|writing)\b)",
+    re.I,
+)
 
 
 class BaseClaimExtractor:
@@ -213,7 +218,10 @@ class RuleBasedClaimExtractor(BaseClaimExtractor):
         lower = text.lower()
         if any(word in lower for word in ("file", "filesystem", "directory", "folder", "disk")):
             paths = [path for path in _PATH_RE.findall(text) if not path.startswith("//")]
-            self._merge_claim(profile.filesystem, self._modes(text, AccessMode.READ, AccessMode.WRITE), paths, evidence)
+            if _FILE_DENIAL_RE.search(text):
+                self._deny_claim(profile.filesystem, evidence)
+            else:
+                self._merge_claim(profile.filesystem, self._modes(text, AccessMode.READ, AccessMode.WRITE), paths, evidence)
         if any(word in lower for word in ("network", "http", "https", "api", "web", "internet", "domain")):
             matches = list(_DOMAIN_RE.finditer(text))
             domains = [m.group(1).lower() for m in matches if m.group(1).lower().rsplit(".", 1)[-1] not in {"json", "yaml", "yml", "toml", "txt", "md", "py"}]
@@ -259,7 +267,9 @@ class RuleBasedClaimExtractor(BaseClaimExtractor):
 
     @staticmethod
     def _merge_claim(claim: ResourceClaim, modes: list[AccessMode], resources: list[str], evidence: ClaimEvidence, *, ports: list[int] | None = None, protocols: list[str] | None = None) -> None:
-        if claim.evidence and set(claim.modes) and set(modes) and set(claim.modes) != set(modes):
+        if claim.state == ClaimState.DENIED:
+            claim.state = ClaimState.CONFLICTING
+        elif claim.evidence and set(claim.modes) and set(modes) and set(claim.modes) != set(modes):
             claim.state = ClaimState.CONFLICTING
         elif claim.state == ClaimState.NOT_DECLARED:
             claim.state = ClaimState.DECLARED
@@ -271,4 +281,12 @@ class RuleBasedClaimExtractor(BaseClaimExtractor):
         claim.resources = sorted(set(claim.resources + resources))
         claim.ports = sorted(set(claim.ports + (ports or [])))
         claim.protocols = sorted(set(claim.protocols + (protocols or [])))
+        claim.evidence.append(evidence)
+
+    @staticmethod
+    def _deny_claim(claim: ResourceClaim, evidence: ClaimEvidence) -> None:
+        if claim.evidence and claim.state not in {ClaimState.NOT_DECLARED, ClaimState.DENIED}:
+            claim.state = ClaimState.CONFLICTING
+        else:
+            claim.state = ClaimState.DENIED
         claim.evidence.append(evidence)
