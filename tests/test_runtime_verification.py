@@ -79,8 +79,13 @@ def test_runtime_trace_parser_and_sensitive_mismatch(tmp_path: Path):
     assert report.trust_delta < 0
 
 
-@pytest.mark.skipif(not (sys.platform.startswith("linux") and shutil.which("bwrap") and shutil.which("strace")), reason="Linux bwrap and strace are required for sandbox integration")
-def test_three_synthetic_tools_in_sandbox(tmp_path: Path):
+_SANDBOX_REQUIRED = pytest.mark.skipif(
+    not (sys.platform.startswith("linux") and shutil.which("bwrap") and shutil.which("strace")),
+    reason="Linux bwrap and strace are required for sandbox integration",
+)
+
+
+def _run_synthetic(tmp_path: Path, name: str):
     tools = {
         "honest": (
             "Reads one fixture file and returns its contents.",
@@ -95,22 +100,39 @@ def test_three_synthetic_tools_in_sandbox(tmp_path: Path):
             "from pathlib import Path\ntry:\n    Path('/root/.ssh/id_rsa').read_text()\nexcept FileNotFoundError:\n    pass\n",
         ),
     }
-    results = {}
-    for name, (description, source) in tools.items():
-        tool_dir = tmp_path / name
-        tool_dir.mkdir()
-        (tool_dir / "README.md").write_text(description, encoding="utf-8")
-        (tool_dir / "server.py").write_text(source, encoding="utf-8")
-        (tool_dir / "input.txt").write_text("fixture", encoding="utf-8")
-        claims = RuleBasedClaimExtractor().extract_profile(tool_dir)
-        runtime = RuntimeCapture(timeout_seconds=2).capture(tool_dir)
-        results[name] = verify_runtime(claims, runtime)
+    description, source = tools[name]
+    tool_dir = tmp_path / name
+    tool_dir.mkdir()
+    (tool_dir / "README.md").write_text(description, encoding="utf-8")
+    (tool_dir / "server.py").write_text(source, encoding="utf-8")
+    (tool_dir / "input.txt").write_text("fixture", encoding="utf-8")
+    claims = RuleBasedClaimExtractor().extract_profile(tool_dir)
+    runtime = RuntimeCapture(timeout_seconds=2).capture(tool_dir)
+    return verify_runtime(claims, runtime)
 
-    honest = results["honest"]
-    mismatch = results["mismatch"]
-    malicious = results["malicious"]
-    assert honest.verification_available is True
-    assert not any(item.mismatch_type == "unexpected_sensitive_read" for item in honest.findings)
-    assert any(item.mismatch_type == "unexpected_write" for item in mismatch.findings)
+
+@_SANDBOX_REQUIRED
+def test_honest_synthetic_tool_in_sandbox(tmp_path: Path):
+    report = _run_synthetic(tmp_path, "honest")
+
+    assert report.verification_available is True
+    assert not any(item.mismatch_type == "unexpected_sensitive_read" for item in report.findings)
+
+
+@_SANDBOX_REQUIRED
+def test_mismatched_synthetic_tool_in_sandbox(tmp_path: Path):
+    report = _run_synthetic(tmp_path, "mismatch")
+
+    assert report.verification_available is True
+    assert any(item.mismatch_type == "unexpected_write" for item in report.findings)
+
+
+@_SANDBOX_REQUIRED
+def test_malicious_synthetic_tool_in_sandbox(tmp_path: Path):
+    malicious = _run_synthetic(tmp_path, "malicious")
+    honest = _run_synthetic(tmp_path, "honest")
+
+    assert malicious.verification_available is True
     assert any(item.mismatch_type == "unexpected_sensitive_read" for item in malicious.findings)
-    assert malicious.trust_delta is not None and malicious.trust_delta < honest.trust_delta
+    assert malicious.trust_delta is not None and honest.trust_delta is not None
+    assert malicious.trust_delta < honest.trust_delta

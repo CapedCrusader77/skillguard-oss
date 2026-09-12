@@ -36,9 +36,15 @@ jobs:
         run: |
           set -o pipefail
           python -m pytest -q --junitxml=pytest-results.xml 2>&1 | tee pytest.log
+      - name: Validate honest synthetic tool
+        if: always()
+        run: sudo -E "$(command -v python)" -m pytest -q tests/test_runtime_verification.py -k honest_synthetic_tool_in_sandbox
+      - name: Validate mismatched synthetic tool
+        if: always()
+        run: sudo -E "$(command -v python)" -m pytest -q tests/test_runtime_verification.py -k mismatched_synthetic_tool_in_sandbox
       - name: Require malicious synthetic tool mismatch
         if: always()
-        run: sudo -E "$(command -v python)" -m pytest -q tests/test_runtime_verification.py -k three_synthetic_tools_in_sandbox
+        run: sudo -E "$(command -v python)" -m pytest -q tests/test_runtime_verification.py -k malicious_synthetic_tool_in_sandbox
       - name: Upload pytest diagnostics
         if: always()
         uses: actions/upload-artifact@v4
