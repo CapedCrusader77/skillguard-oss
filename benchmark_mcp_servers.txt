@@ -1,0 +1,21 @@
+# Public MCP repositories selected for the v1 benchmark.
+https://github.com/modelcontextprotocol/servers
+https://github.com/modelcontextprotocol/python-sdk
+https://github.com/modelcontextprotocol/typescript-sdk
+https://github.com/microsoft/playwright-mcp
+https://github.com/github/github-mcp-server
+https://github.com/upstash/context7
+https://github.com/browserbase/mcp-server-browserbase
+https://github.com/firecrawl/firecrawl-mcp-server
+https://github.com/modelcontextprotocol/quickstart-resources
+https://github.com/modelcontextprotocol/inspector
+https://github.com/modelcontextprotocol/example-remote-server
+https://github.com/googleapis/genai-toolbox
+https://github.com/awslabs/mcp
+https://github.com/mendableai/firecrawl-mcp-server
+https://github.com/browsermcp/mcp
+https://github.com/exa-labs/exa-mcp-server
+https://github.com/openapi/mcp-server
+https://github.com/Bandwidth/mcp-server
+https://github.com/apify/apify-mcp-server
+https://github.com/docker/mcp-servers

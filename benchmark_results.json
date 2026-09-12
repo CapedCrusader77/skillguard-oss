@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "tool": "skillguard claim-vs-runtime verification",
+  "timeout_seconds": 10.0,
+  "results": [
+    {"url": "https://github.com/modelcontextprotocol/servers", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 2, "mismatch_types": ["conflicting_claim", "execution_incomplete"]},
+    {"url": "https://github.com/modelcontextprotocol/python-sdk", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/modelcontextprotocol/typescript-sdk", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 2, "mismatch_types": ["conflicting_claim", "execution_incomplete"]},
+    {"url": "https://github.com/microsoft/playwright-mcp", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/github/github-mcp-server", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 2, "mismatch_types": ["conflicting_claim", "execution_incomplete"]},
+    {"url": "https://github.com/upstash/context7", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/browserbase/mcp-server-browserbase", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/firecrawl/firecrawl-mcp-server", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/modelcontextprotocol/quickstart-resources", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/modelcontextprotocol/inspector", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 2, "mismatch_types": ["conflicting_claim", "execution_incomplete"]},
+    {"url": "https://github.com/modelcontextprotocol/example-remote-server", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 2, "mismatch_types": ["conflicting_claim", "execution_incomplete"]},
+    {"url": "https://github.com/googleapis/genai-toolbox", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 2, "mismatch_types": ["conflicting_claim", "execution_incomplete"]},
+    {"url": "https://github.com/awslabs/mcp", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/mendableai/firecrawl-mcp-server", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/browsermcp/mcp", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/exa-labs/exa-mcp-server", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/openapi/mcp-server", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/Bandwidth/mcp-server", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/apify/apify-mcp-server", "status": "sandbox_unavailable", "runtime_status": "sandbox_unavailable", "verification_available": false, "mismatch_count": 1, "mismatch_types": ["execution_incomplete"]},
+    {"url": "https://github.com/docker/mcp-servers", "status": "benchmark_error", "runtime_status": "not_run", "verification_available": false, "mismatch_count": 0, "mismatch_types": [], "error": "Failed to access repository. It may be private, require authentication, or does not exist."}
+  ],
+  "summary": {
+    "total": 20,
+    "completed": 0,
+    "with_mismatch": 0,
+    "mismatch_rate": null,
+    "mismatch_types": {},
+    "runtime_available": false,
+    "note": "No runtime was executed; this artifact is not evidence of clean behavior."
+  }
+}

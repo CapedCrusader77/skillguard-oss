@@ -16,7 +16,8 @@ from skillguard.scanners import scan_file, JavaScriptScanner, TypeScriptScanner,
 from skillguard.analyzers import analyzer_registry
 from skillguard.analysis import (
     RuleBasedClaimExtractor, BehaviorAnalyzer, TrustEvaluator,
-    ProjectProfiler, ProjectType, Capability, BehaviorProfile
+    ProjectProfiler, ProjectType, Capability, BehaviorProfile,
+    RuntimeCapture, verify_runtime as compare_runtime_claims
 )
 from skillguard.models.finding import Finding
 from skillguard.models.report import (
@@ -25,6 +26,7 @@ from skillguard.models.report import (
 )
 from skillguard.models.risk import RiskLevel, get_risk_level
 from skillguard.reports import write_report_json, write_html_report
+from skillguard.analysis.benchmark_runtime import run_runtime_benchmark
 
 # Initialize Rich console
 console = Console()
@@ -174,6 +176,17 @@ def scan(
         "--ai",
         help="Use AI to analyze whether observed behavior matches claimed purpose"
     ),
+    verify_runtime: bool = typer.Option(
+        False,
+        "--verify-runtime",
+        help="Run the Python target in a Linux bubblewrap+strace sandbox and compare observed behavior with claims"
+    ),
+    runtime_timeout: float = typer.Option(
+        10.0,
+        "--runtime-timeout",
+        min=0.1,
+        help="Maximum runtime verification duration in seconds"
+    ),
     output: str = typer.Option(
         "report.json",
         "--output",
@@ -231,7 +244,9 @@ def scan(
             output=output,
             is_github=is_github,
             github_repo_name=github_repo_name,
-            path=path
+            path=path,
+            verify_runtime=verify_runtime,
+            runtime_timeout=runtime_timeout
         )
     finally:
         if temp_dir_obj:
@@ -250,7 +265,9 @@ def _run_scan(
     output: str,
     is_github: bool,
     github_repo_name: str,
-    path: str
+    path: str,
+    verify_runtime: bool = False,
+    runtime_timeout: float = 10.0,
 ):
     # Load files using the repository discovery engine
     try:
@@ -280,7 +297,10 @@ def _run_scan(
         console.print(f"{lang}: [bold]{count}[/bold]")
     console.print()
     
-    analysis_type = "Full Analysis" if full else "Code AST Analysis"
+    if verify_runtime:
+        full = True
+        trust = True
+    analysis_type = "Full Analysis + Runtime Verification" if verify_runtime else ("Full Analysis" if full else "Code AST Analysis")
     console.print(f"[bold blue]Beginning {analysis_type}...[/bold blue]")
     console.print()
 
@@ -440,6 +460,18 @@ def _run_scan(
                 except Exception as e:
                     console.print(f"[dim red]Error during claim/behavior evaluation on {repo_name}: {e}[/]")
 
+            # Optional runtime verification is isolated and fail-closed. The
+            # runtime report is still emitted when Linux sandbox tooling is
+            # unavailable so a missing verifier cannot look like a pass.
+            repo_runtime_verification = None
+            if verify_runtime:
+                try:
+                    runtime_claims = RuleBasedClaimExtractor().extract_profile(repo_root)
+                    runtime_profile = RuntimeCapture(timeout_seconds=runtime_timeout).capture(repo_root)
+                    repo_runtime_verification = compare_runtime_claims(runtime_claims, runtime_profile)
+                except Exception as e:
+                    console.print(f"[dim red]Runtime verification error on {repo_name}: {e}[/]")
+
             # Verdict Logic:
             # Trust >= 85 and Risk LOW => SAFE
             # Trust 60-84 => REVIEW RECOMMENDED
@@ -448,6 +480,8 @@ def _run_scan(
             t_val = repo_trust_report.overall_score
             if repo_eval is not None:
                 t_val = min(t_val, repo_eval.trust_score)
+            if repo_runtime_verification is not None and repo_runtime_verification.verification_score is not None:
+                t_val = min(t_val, repo_runtime_verification.verification_score)
 
             has_repo_critical = any(f.severity.upper() == "CRITICAL" for f in repo_security_findings)
             has_repo_high = any(f.severity.upper() == "HIGH" for f in repo_security_findings)
@@ -458,6 +492,8 @@ def _run_scan(
                 repo_verdict = "DANGEROUS"
             elif t_val < 60:
                 repo_verdict = "HIGH RISK"
+            elif verify_runtime and (repo_runtime_verification is None or not repo_runtime_verification.verification_available):
+                repo_verdict = "REVIEW RECOMMENDED"
             elif t_val >= 85 and repo_risk_level == RiskLevel.LOW and not has_repo_high:
                 repo_verdict = "SAFE"
             else:
@@ -472,6 +508,7 @@ def _run_scan(
                 permission_footprint=repo_footprint,
                 findings=repo_security_findings,
                 evaluation_report=repo_eval,
+                runtime_verification=repo_runtime_verification,
                 project_type=repo_project_type.value,
                 verdict=repo_verdict
             )
@@ -569,6 +606,7 @@ def _run_scan(
         findings=all_flat_findings,
         trust_score=portfolio_trust_report,
         evaluation_report=None,
+        runtime_verification=(repositories_reports[0].runtime_verification if len(repositories_reports) == 1 else None),
         project_type="Portfolio",
         permission_footprint=portfolio_footprint,
         executive_summary=ExecutiveSummary(verdict=overall_verdict, message=overall_message),
@@ -789,6 +827,24 @@ def _run_scan(
                 )
                 console.print()
 
+    # 7. Output Claim vs Runtime details if requested
+    for r in repositories_reports:
+        if r.runtime_verification:
+            verification = r.runtime_verification
+            runtime = verification.runtime_profile
+            finding_text = "\n".join(f"  ⚠️ {item.message}" for item in verification.findings) or "  ✓ None"
+            runtime_text = (
+                f"Status: {runtime.status}\n"
+                f"Files touched: {len(runtime.files_touched)}\n"
+                f"Network connections: {len(runtime.network_connections)}\n"
+                f"Subprocesses: {len(runtime.subprocesses)}\n"
+                f"Trust delta: {verification.trust_delta}\n"
+                f"Verification score: {verification.verification_score}/100\n\n"
+                f"Findings:\n{finding_text}"
+            )
+            console.print(Panel(runtime_text, title=f"[bold]Claim vs Runtime Verification: {r.name}[/bold]", border_style="magenta", box=box.ROUNDED))
+            console.print()
+
     if json_path:
         console.print(f"Report saved to: [bold underline]{json_path}[/]")
     if html_path:
@@ -801,6 +857,22 @@ def _run_scan(
         raise typer.Exit(code=1)
     else:
         raise typer.Exit(code=0)
+
+@app.command("benchmark-runtime")
+def benchmark_runtime(
+    repos_file: str = typer.Argument(..., help="File containing public GitHub repository URLs, one per line"),
+    output: str = typer.Option("benchmark_results.json", "--output", "-o", help="Structured benchmark output path"),
+    runtime_timeout: float = typer.Option(10.0, "--runtime-timeout", min=0.1, help="Per-repository runtime limit in seconds"),
+):
+    """Run claim extraction and fail-closed runtime verification over a URL list."""
+    source = Path(repos_file).resolve()
+    if not source.exists():
+        console.print(f"[bold red]Benchmark input does not exist:[/] {source}")
+        raise typer.Exit(code=1)
+    urls = source.read_text(encoding="utf-8", errors="ignore").splitlines()
+    result_path = run_runtime_benchmark(urls, output, runtime_timeout)
+    console.print(f"Benchmark results saved to: [bold underline]{result_path}[/]")
+
 
 @app.command()
 def benchmark(

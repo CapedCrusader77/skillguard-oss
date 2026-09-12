@@ -49,9 +49,10 @@ Warnings:
 8. [GitHub Action Usage](#-github-action-usage)
 9. [Trust Scoring & Deductions](#-trust-scoring--deductions)
 10. [AI Claim-vs-Behavior Analysis](#-ai-claim-vs-behavior-analysis)
-11. [Roadmap](#-roadmap)
-12. [Contributing](#-contributing)
-13. [License](#-license)
+11. [Claim-vs-Runtime Verification](#-claim-vs-runtime-verification)
+12. [Roadmap](#-roadmap)
+13. [Contributing](#-contributing)
+14. [License](#-license)
 
 ---
 
@@ -153,6 +154,8 @@ skillguard scan <path_or_url> [OPTIONS]
 * `--html`: Generates an interactive, styled HTML dashboard report in `report.html`.
 * `--json`: Generates a structured JSON summary report in `report.json`.
 * `--ai`: Runs AI-powered Claim vs Behavior analysis.
+* `--verify-runtime`: Runs a Python entrypoint in a Linux bubblewrap + strace sandbox and compares observed resources with extracted claims. Implies `--full` and `--trust`.
+* `--runtime-timeout <seconds>`: Bounds the runtime verification invocation (default: 10 seconds).
 * `-o`, `--output <path>`: Specifies custom path for the generated JSON report.
 
 ### Examples
@@ -171,6 +174,32 @@ skillguard scan ./my-plugin-repo --full --html --json
 ```bash
 skillguard scan https://github.com/modelcontextprotocol/servers --html
 ```
+
+## 🔬 Claim-vs-Runtime Verification
+
+Static analysis can identify what a tool appears capable of, but it cannot
+prove what happens during execution. Runtime verification adds a bounded,
+opt-in run of a Python entrypoint inside a Linux `bubblewrap` namespace while
+`strace` records file, network, and process syscalls. The resulting
+`runtime_verification` section is included in JSON reports and contains the
+claim profile, runtime profile, discrete mismatch findings, and a weighted
+trust delta.
+
+```bash
+skillguard scan ./my-mcp-server --verify-runtime --json
+```
+
+The verifier fails closed: on systems without Linux, `bwrap`, or `strace`, the
+report records `sandbox_unavailable` rather than treating the tool as verified.
+Unavailable or incomplete runs set `verification_available` to `false` and do
+not receive a verification score or trust delta.
+In the checked-in benchmark run, the official
+`modelcontextprotocol/servers` repository was cloned successfully but recorded
+`sandbox_unavailable` on this Windows host, so no runtime behavior was claimed
+from that result.
+The current benchmark methodology and results are documented in
+[BENCHMARK.md](BENCHMARK.md), with the rationale for every score weight in
+[SCORING.md](SCORING.md).
 
 ---
 
@@ -193,6 +222,12 @@ https://github.com/crewAIInc/crewAI
 ### Options
 * `-o`, `--output <path>`: Path to output the HTML dashboard comparison.
 * `--full`: Run full supply chain audits on each repository.
+
+For the claim-vs-runtime benchmark, use the included public repository list:
+
+```bash
+skillguard benchmark-runtime benchmark_mcp_servers.txt --output benchmark_results.json
+```
 
 ---
 

@@ -250,6 +250,26 @@ def write_html_report(report: Report, trust_report: TrustScoreReport, output_pat
             </div>
             """
 
+        runtime_card_html = ""
+        if r.runtime_verification:
+            verification = r.runtime_verification
+            runtime = verification.runtime_profile
+            runtime_findings = "".join(
+                f'<div style="margin-bottom: 0.45rem; color: #f97316;">&bull; {html.escape(item.message)} <small>({item.weight})</small></div>'
+                for item in verification.findings
+            ) or '<div style="color: #10b981;">No claim/runtime mismatches detected.</div>'
+            runtime_card_html = f"""
+            <div class="card" style="grid-column: span 3; margin-top: 1.5rem; border-color: rgba(217, 70, 239, 0.35);">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 1.25rem; color: #e879f9;">Claim-vs-Runtime Verification</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem;">
+                    <div class="sub-card"><strong>Status</strong><p>{html.escape(runtime.status)}</p></div>
+                    <div class="sub-card"><strong>Verification score</strong><p>{(str(verification.verification_score) + '/100 (' + str(verification.trust_delta) + ')') if verification.verification_available else 'UNAVAILABLE — no score assigned'}</p></div>
+                    <div class="sub-card"><strong>Observed activity</strong><p>{len(runtime.files_touched)} files · {len(runtime.network_connections)} network · {len(runtime.subprocesses)} processes</p></div>
+                    <div class="sub-card"><strong>Findings</strong><div>{runtime_findings}</div></div>
+                </div>
+            </div>
+            """
+
         # Reasons/Warnings list
         reasons_list = []
         for reason in r.trust_score.reasons:
@@ -373,6 +393,9 @@ def write_html_report(report: Report, trust_report: TrustScoreReport, output_pat
 
             <!-- Claim vs Behavior Card -->
             {eval_card_html}
+
+            <!-- Claim vs Runtime Card -->
+            {runtime_card_html}
 
             <!-- Alignments & Reasons -->
             <div class="card" style="grid-column: span 1.5; margin-top: 1rem;">
