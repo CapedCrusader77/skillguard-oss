@@ -1,6 +1,12 @@
 # 🛡️ SkillGuard OSS
 
-SkillGuard OSS is an AI agent supply-chain security scanner that analyzes MCP servers, plugins, agent tools, workflows, dependencies, and source code before execution.
+[![CI](https://github.com/CapedCrusader77/skillguard-oss/actions/workflows/runtime-regression.yml/badge.svg)](https://github.com/CapedCrusader77/skillguard-oss/actions/workflows/runtime-regression.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Verification](https://img.shields.io/badge/Runtime%20Verification-Bubblewrap%20%2B%20strace-purple.svg)](#-claim-vs-runtime-verification)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/CapedCrusader77/skillguard-oss/pulls)
+
+**SkillGuard OSS** is an AI agent supply-chain security scanner and dynamic runtime verification engine. It analyzes Model Context Protocol (MCP) servers, agent skills, plugins, workflows, dependencies, and codebases before and during execution.
 
 Think of it as **"VirusTotal for AI Agents."**
 
@@ -9,25 +15,37 @@ Think of it as **"VirusTotal for AI Agents."**
 ## 🚀 Quick Start
 
 ```bash
+# Install SkillGuard
 pip install skillguard-oss
 
+# Scan an MCP server or repository (Static Analysis + HTML Report)
 skillguard scan https://github.com/modelcontextprotocol/servers --html
+
+# Run with sandboxed dynamic runtime verification (Linux bubblewrap + strace)
+skillguard scan ./my-mcp-server --verify-runtime --html --json
 ```
 
-Example Output:
+### Example CLI Output:
 
 ```text
-Trust Score: 89
+============================================================
+🛡️  SkillGuard Security & Trust Report
+============================================================
+Overall Trust Score: 89/100 (LOW RISK)
 
-Risk Level: LOW
+Runtime Verification:
+  Status: COMPLETED
+  Sandbox: bubblewrap + strace
+  Verification Score: 100/100 (Trust Delta: 0)
 
 Permission Footprint:
-✓ Network Access
-✓ Environment Access
+  ✓ Network Access (api.weather.gov:443)
+  ✓ Environment Access (PATH, LANG)
+  - Filesystem Writes: None detected
 
-Warnings:
-* Unpinned GitHub Actions
-* Unexpected Filesystem Access
+Static Security Warnings:
+  * Unpinned GitHub Actions workflow dependency
+============================================================
 ```
 
 ---
@@ -40,84 +58,93 @@ Warnings:
 
 ## 📖 Table of Contents
 1. [Why SkillGuard?](#-why-skillguard)
-2. [Overview](#-overview)
-3. [Features](#-features)
-4. [Architecture](#-architecture)
-5. [Installation](#-installation)
-6. [Usage](#-usage)
+2. [Key Capabilities](#-key-capabilities)
+3. [Architecture](#-architecture)
+4. [Installation](#-installation)
+5. [Usage & Commands](#-usage--commands)
+6. [Claim-vs-Runtime Verification](#-claim-vs-runtime-verification)
 7. [Benchmark Mode](#-benchmark-mode)
-8. [GitHub Action Usage](#-github-action-usage)
-9. [Trust Scoring & Deductions](#-trust-scoring--deductions)
-10. [AI Claim-vs-Behavior Analysis](#-ai-claim-vs-behavior-analysis)
-11. [Claim-vs-Runtime Verification](#-claim-vs-runtime-verification)
-12. [Roadmap](#-roadmap)
-13. [Contributing](#-contributing)
-14. [License](#-license)
+8. [GitHub Action CI/CD Gate](#-github-action-cicd-gate)
+9. [Trust Scoring System](#-trust-scoring-system)
+10. [Roadmap](#-roadmap)
+11. [Contributing](#-contributing)
+12. [License](#-license)
 
 ---
 
 ## ❓ Why SkillGuard?
 
-Traditional security scanners focus on source code vulnerabilities.
+Traditional static application security testing (SAST) tools scan for generic code flaws like SQL injection or memory safety bugs.
 
-SkillGuard focuses on AI agent trust.
+**SkillGuard focuses on AI agent trust and intent alignment.**
 
-It answers questions such as:
-* Does this MCP server access files unexpectedly?
-* Does this plugin execute shell commands?
-* Does the observed behavior match the claimed purpose?
-* Does the project contain supply-chain risks?
-* Should I trust this AI tool before running it?
+It answers critical questions before you install or grant permissions to an AI agent extension:
+* **Undeclared Capabilities**: Does this "calculator" or "format converter" tool silently open network sockets or read `~/.ssh`?
+* **Claim Mismatches**: Does the observed runtime behavior match what the developer claims in manifests and tool descriptions?
+* **Supply-Chain Vulnerabilities**: Are there typosquatted packages, unsafe Docker configurations, or unpinned GitHub Actions?
+* **Exfiltration Risk**: Does the tool harvest environment keys, API tokens, or local credentials?
 
-SkillGuard combines static analysis, supply-chain auditing, trust scoring, and AI-powered behavior assessment into a single workflow.
-
----
-
-## 🔍 Overview
-
-Artificial intelligence agents rely on plugins and tools (like MCP servers) to interact with the environment. However, running untrusted agent extensions poses a high threat of:
-* Arbitrary Command Execution
-* Silent Data Exfiltration
-* Accessing/Manipulating Local Databases and filesystems
-* Credential Harvesting
-
-SkillGuard is a DevSecOps static analysis tool that parses AST representation of code and configuration files, computes a trust score index, and flags dangerous agent capabilities.
+SkillGuard combines multi-language static AST scanning, supply-chain auditing, AI claim analysis, and **sandboxed dynamic runtime syscall verification** into a single cohesive pipeline.
 
 ---
 
-## ✨ Features
+## ✨ Key Capabilities
 
-- **AST-Based Source Code Scanning**: Parses Python, JavaScript, TypeScript, and Dart source files recursively to track imports, aliases, and dangerous API calls.
-- **Repository Discovery Engine**: Automatically walks directories, groups files by language, detects git boundaries, and isolates multi-project monorepos.
-- **Supply Chain Security Analyzers**:
-  - **Dependency Analyzer**: Scans requirements manifests and package lockfiles for typosquatting (e.g. `requestss`), duplicate dependencies, and excessive system permissions.
-  - **Dockerfile Analyzer**: Flags root execution, unsafe file permissions (`chmod 777`), remote script execution, and unpinned dependencies during container builds.
-  - **GitHub Actions Analyzer**: Scans workflow files for remote scripts downloads, actions unpinned to Git commit SHAs, and secrets exposure in environment declarations.
-  - **Secret Analyzer**: Searches the codebase recursively for exposed API keys (OpenAI, AWS, Google API keys), JWT/Bearer tokens, and hardcoded variables.
-  - **Network Destination Analyzer**: Automatically extracts outbound domains, hostnames, and IPs referenced in request commands.
-- **AI Claim-vs-Behavior Analyzer**: Uses LLMs to evaluate if the observed code capabilities align with the developer's claimed purpose (e.g. a "Calculator" plugin should not request network/filesystem access).
-- **HTML Dashboards**: Generates interactive styled reports (`report.html`) complete with circular trust gauges and filterable findings.
-- **JSON Integration Reports**: Outputs a machine-readable `report.json` with trust scores and categorized findings for CI/CD gates.
+- **AST-Based Source Code Scanning**:
+  - Recursively parses Python, JavaScript, TypeScript, and Dart ASTs to detect dangerous imports, shell executions, filesystem operations, and network calls.
+- **Dynamic Runtime Verification (Bubblewrap + strace)**:
+  - Executes entrypoints in isolated Linux namespaces (`bwrap`) with per-thread syscall monitoring (`strace -ff`).
+  - Performs sandboxed dependency installation (`pip`) and standard MCP JSON-RPC 2.0 handshake (`initialize`, `notifications/initialized`, `tools/list`) over stdio.
+  - Compares observed syscall profiles against declared claims and calculates a weighted trust delta.
+  - Fails closed: non-running or missing environments produce explicit status findings rather than false passes.
+- **Supply-Chain Security Analyzers**:
+  - **Dependency Analyzer**: Detects typosquatting (e.g., `requestss`), duplicate packages, and malicious install scripts.
+  - **Dockerfile Analyzer**: Flags root execution, unsafe file permissions (`chmod 777`), remote script execution, and unpinned base images.
+  - **GitHub Actions Analyzer**: Audits workflows for unpinned action SHAs, secret leaks, and untrusted script downloads.
+  - **Secret Detection Engine**: Scans for exposed OpenAI keys, AWS tokens, Google API keys, JWTs, and private keys.
+  - **Network Destination Extractor**: Automatically extracts external domains, IPs, and endpoints called by the tool.
+- **AI Claim-vs-Behavior Assessment**:
+  - Uses LLMs to evaluate semantic alignment between developer documentation/claims and detected static code capabilities.
+- **Reporting & Dashboards**:
+  - Interactive HTML dashboard (`report.html`) with visual trust gauges and filterable finding tables.
+  - Machine-readable JSON report (`report.json`) tailored for CI/CD gating.
+- **Multi-Repo Benchmark Suite**:
+  - Built-in runner for evaluating collections of agent skills or MCP servers simultaneously.
 
 ---
 
 ## 🏗️ Architecture
 
-SkillGuard maps codebases to isolated logical repositories and evaluates security in pipeline:
-
 ```mermaid
 graph TD
-    A[Target Path / Git URL] --> B[Repo Discovery Engine]
-    B --> C[Isolated Repositories Map]
-    C --> D[AST File Scanners]
-    C --> E[Supply Chain Analyzers]
-    D --> F[Vulnerability / Capability Detection]
-    E --> F
-    F --> G[Context Aware Scoring Engine]
-    G --> H[Claim Extraction & AI Evaluation]
-    H --> I[Portfolio Trust Index Aggregator]
-    I --> J[HTML / JSON Report Generator]
-    I --> K[CI/CD Build Failure Gate]
+    A[Target Path / Git Repository] --> B[Repository Discovery Engine]
+    B --> C[Language & Config Isolation]
+
+    subgraph "Static Analysis Pipeline"
+        C --> D[Multi-Language AST Scanners]
+        C --> E[Supply Chain & Config Analyzers]
+        D --> F[Static Capability & Vulnerability Map]
+        E --> F
+        C --> G[Claim Extraction Engine]
+    end
+
+    subgraph "Dynamic Verification Pipeline (Linux)"
+        C --> H[Sandbox Manager: bubblewrap]
+        H --> I[Isolated Dependency Setup]
+        I --> J[MCP Protocol Handshake over stdio]
+        J --> K[Syscall Tracing: strace -ff]
+        K --> L[Observed Runtime Profile]
+    end
+
+    F --> M[Scoring & Evaluation Engine]
+    G --> M
+    L --> N[Claim-vs-Runtime Verification Engine]
+    N --> M
+
+    M --> O[Portfolio Trust Index Aggregator]
+    O --> P[Interactive HTML Dashboard]
+    O --> Q[Machine-Readable JSON Report]
+    O --> R[CI/CD Security Gate]
 ```
 
 ---
@@ -126,7 +153,7 @@ graph TD
 
 SkillGuard requires **Python 3.12+**.
 
-### Via PyPI
+### From PyPI
 ```bash
 pip install skillguard-oss
 ```
@@ -138,105 +165,98 @@ cd skillguard-oss
 pip install -e .
 ```
 
+### Optional Linux Runtime Sandbox Dependencies
+To enable dynamic runtime verification (`--verify-runtime`), ensure `bubblewrap` and `strace` are installed on your Linux system:
+```bash
+# Debian / Ubuntu
+sudo apt-get update && sudo apt-get install -y bubblewrap strace
+```
+
 ---
 
-## 💻 Usage
+## 💻 Usage & Commands
 
-Scan a repository, directory, or individual file using:
+### Single Target Scan
 
 ```bash
 skillguard scan <path_or_url> [OPTIONS]
 ```
 
-### Options
+#### Common Options:
+* `--full`: Runs complete suite including code AST scanners and all supply-chain analyzers.
+* `--html`: Generates an interactive HTML report (`report.html`).
+* `--json`: Generates a structured JSON summary (`report.json`).
+* `--ai`: Runs AI-powered Claim vs Behavior semantic analysis.
+* `--verify-runtime`: Runs Python entrypoints inside Linux `bubblewrap` + `strace` to compare declared claims with observed syscalls.
+* `--runtime-timeout <seconds>`: Bounds runtime verification timeout (default: 10s).
+* `-o`, `--output <path>`: Specifies custom output path for JSON report.
 
-* `--full`: Runs the complete suite including code AST scanners and all supply chain analyzers.
-* `--html`: Generates an interactive, styled HTML dashboard report in `report.html`.
-* `--json`: Generates a structured JSON summary report in `report.json`.
-* `--ai`: Runs AI-powered Claim vs Behavior analysis.
-* `--verify-runtime`: Runs a Python entrypoint in a Linux bubblewrap + strace sandbox and compares observed resources with extracted claims. Implies `--full` and `--trust`.
-* `--runtime-timeout <seconds>`: Bounds the runtime verification invocation (default: 10 seconds).
-* `-o`, `--output <path>`: Specifies custom path for the generated JSON report.
+#### Examples:
 
-### Examples
-
-**Scan a python directory (AST scan only):**
+**1. Fast static scan of a local directory:**
 ```bash
 skillguard scan ./my-mcp-server
 ```
 
-**Run a full supply chain and secrets audit on a repository, outputting HTML and JSON reports:**
+**2. Full supply-chain audit with HTML dashboard:**
 ```bash
-skillguard scan ./my-plugin-repo --full --html --json
+skillguard scan ./my-plugin-repo --full --html
 ```
 
-**Scan a remote GitHub repository:**
+**3. Sandboxed dynamic runtime verification:**
+```bash
+skillguard scan ./my-mcp-server --verify-runtime --html --json
+```
+
+**4. Scan a remote GitHub repository directly:**
 ```bash
 skillguard scan https://github.com/modelcontextprotocol/servers --html
 ```
 
+---
+
 ## 🔬 Claim-vs-Runtime Verification
 
-Static analysis can identify what a tool appears capable of, but it cannot
-prove what happens during execution. Runtime verification adds a bounded,
-opt-in run of a Python entrypoint inside a Linux `bubblewrap` namespace while
-`strace` records file, network, and process syscalls. The resulting
-`runtime_verification` section is included in JSON reports and contains the
-claim profile, runtime profile, discrete mismatch findings, and a weighted
-trust delta.
+Static analysis identifies what code *appears* capable of doing, but dynamic verification proves what happens *during execution*.
 
-```bash
-skillguard scan ./my-mcp-server --verify-runtime --json
-```
+When `--verify-runtime` is invoked, SkillGuard:
+1. **Installs dependencies** inside an isolated Bubblewrap sandbox namespace.
+2. **Executes the server entrypoint** under `strace -ff` capture.
+3. **Conducts MCP JSON-RPC 2.0 handshake** over `stdin`/`stdout` (`initialize`, `notifications/initialized`, `tools/list`) to observe tool capabilities.
+4. **Parses system calls** into structured file access, network socket, and process execution profiles.
+5. **Cross-references runtime activity** against static claims to detect undeclared network connections, unexpected file writes, or credential access.
+6. **Computes a weighted trust delta** reflecting the severity of observed discrepancies.
 
-The verifier fails closed: on systems without Linux, `bwrap`, or `strace`, the
-report records `sandbox_unavailable` rather than treating the tool as verified.
-Unavailable or incomplete runs set `verification_available` to `false` and do
-not receive a verification score or trust delta.
-The checked-in 20-repository benchmark was executed with full bubblewrap namespace
-isolation and strace syscall capture on Ubuntu Linux CI runners (`verification_available: true`).
-Across the benchmarked ecosystem, tools that completed execution (such as
-`modelcontextprotocol/quickstart-resources` weather server) were verified clean
-(0 mismatches, verification score: 100). Repositories lacking runtime dependencies
-were halted fail-closed with single explicit status findings (`dependency_missing`),
-and non-Python implementations were cleanly recorded (`could_not_execute`).
-The benchmark methodology, per-repo observations, and validation notes are documented in
-[BENCHMARK.md](BENCHMARK.md) and [VALIDATION_NOTES.md](VALIDATION_NOTES.md), with the
-rationale for every score weight in [SCORING.md](SCORING.md).
+### Fail-Closed Design
+If runtime verification cannot proceed (e.g., missing dependencies, non-Linux OS, unsupported runtime), SkillGuard **fails closed**—recording an explicit status finding (`dependency_missing`, `could_not_execute`, `timeout`) rather than falsely passing the tool.
+
+Detailed runtime benchmark data and calibration notes are documented in:
+* [BENCHMARK.md](BENCHMARK.md) – 20-repository real runtime benchmark analysis.
+* [VALIDATION_NOTES.md](VALIDATION_NOTES.md) – Root-cause calibration and trace parsing audit.
+* [SCORING.md](SCORING.md) – Penalty weighting and trust delta rationale.
 
 ---
 
 ## 📊 Benchmark Mode
 
-The `benchmark` command allows DevSecOps teams to evaluate and compare multiple repositories at once, generating a consolidated `benchmark_report.html` dashboard.
+Evaluate and compare multiple agent tools across your organization:
 
+### Static Multi-Repo Benchmark
 ```bash
-skillguard benchmark repos.txt [OPTIONS]
+skillguard benchmark repos.txt --output benchmark_report.html
 ```
 
-### `repos.txt` format
-Provide a list of repository clone URLs (one per line):
-```text
-https://github.com/langchain-ai/langchain
-https://github.com/modelcontextprotocol/servers
-https://github.com/crewAIInc/crewAI
-```
-
-### Options
-* `-o`, `--output <path>`: Path to output the HTML dashboard comparison.
-* `--full`: Run full supply chain audits on each repository.
-
-For the claim-vs-runtime benchmark, use the included public repository list:
-
+### Dynamic Runtime Benchmark
+Run the verified 20-repository MCP benchmark suite:
 ```bash
 skillguard benchmark-runtime benchmark_mcp_servers.txt --output benchmark_results.json
 ```
 
 ---
 
-## 🤖 GitHub Action Usage
+## 🤖 GitHub Action CI/CD Gate
 
-Integrate SkillGuard directly into your CI/CD pipelines to audit pull requests. Add the following file to `.github/workflows/skillguard.yml`:
+Audit pull requests automatically before merging new skills or MCP servers. Add `.github/workflows/skillguard.yml`:
 
 ```yaml
 name: SkillGuard Security Gate
@@ -261,55 +281,39 @@ jobs:
           report_format: both
 ```
 
-### Inputs
-* `trust_threshold`: Minimum acceptable trust score (0-100) before failing the build. Default: `85`.
-* `fail_on_critical`: Fail the build if any `CRITICAL` findings are detected. Default: `true`.
-* `report_format`: Choose `json`, `html`, or `both`. Default: `both`.
-
-### Outputs
-* `trust_score`: Calculated average trust score.
-* `risk_score`: Scored risk metric.
-* `report_path`: Path to `report.json`.
-
 ---
 
-## 🛡️ Trust Scoring & Deductions
+## 🛡️ Trust Scoring System
 
-Trust Scores start at 100 for each of the 5 categories. Deductions are subtracted based on the severity of findings and project profile capabilities:
+Trust Scores start at **100** across 5 categories: Code Safety, Supply Chain, Secrets, Configuration, and Claim Alignment.
 
+Deductions are applied based on severity:
 * 🔴 **CRITICAL** finding: **-25** points
 * 🟠 **HIGH** finding: **-15** points
-* ⚠️ **Unexpected Capability** (e.g. undeclared filesystem or network access for the profiled project type): **-15** points
-
-*Note: Medium and Low severity findings are flagged as warning indicators but do not directly deduct points from the category trust scores.*
-
-The final overall **Trust Score** is the average of these 5 category scores.
-
----
-
-## 🧠 AI Claim-vs-Behavior Analysis
-
-When the `--ai` flag is enabled, SkillGuard parses the codebase's developer documentation (README, manifests, claims) and compares it with the extracted permission footprints.
-
-If a developer claims their plugin is a simple calculator, but AST scanning detects `socket.connect` and `fs.writeFile`, the AI engine flags the mismatch, computes the Trust Score deduction, and outputs an assessment outlining the anomaly.
+* 🟡 **Unexpected Capability**: **-15** points
+* 🔬 **Runtime Verification Mismatch**: Weighted deduction based on resource sensitivity (e.g. credential access = -30, undeclared write = -20).
 
 ---
 
 ## 🛣️ Roadmap
 
-- [x] Reusable GitHub Action with PR comments
-- [ ] Integration with SARIF format for GitHub Security Alerts
-- [x] PyPI packaging and distribution
 - [x] Multi-language AST scanning (Python, JS, TS, Dart)
-- [x] Benchmark command for multi-repo scans
-- [ ] Static taint analysis for data leak detection
-- [ ] Sandbox runtime execution monitoring
+- [x] Supply chain analyzers (Dependencies, Dockerfiles, GitHub Actions, Secrets)
+- [x] Interactive HTML dashboards & machine-readable JSON reports
+- [x] Reusable GitHub Action for CI/CD security gates
+- [x] Dynamic sandbox execution monitoring with Linux Bubblewrap & strace
+- [x] MCP JSON-RPC 2.0 handshake integration in runtime harness
+- [x] Multi-repo benchmark suite with real runtime observations
+- [x] PyPI packaging and distribution
+- [ ] Expanded polyglot runtime capture (Node.js / TypeScript MCP servers)
+- [ ] Integration with SARIF format for native GitHub Security Alerts
+- [ ] Static taint tracking for sensitive data flows
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to open pull requests or submit issues. 
+Contributions are welcome! Please feel free to open pull requests or submit issues.
 
 1. Fork the Project.
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
@@ -321,4 +325,4 @@ Contributions are welcome! Please feel free to open pull requests or submit issu
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
