@@ -381,13 +381,20 @@ class RuntimeCapture:
             "/etc/ld.so",
             "/etc/locale",
             "/etc/localtime",
+            "/etc/ssl/",
+            "/etc/ca-certificates/",
+            "/etc/resolv.conf",
+            "/etc/hosts",
+            "/etc/nsswitch.conf",
+            "/etc/gai.conf",
             "/tmp/",
             "/dev/",
             "/proc/",
+            "/sys/",
         )):
             return True
-        # Reading code source files (.py) during module imports
-        if lower.endswith(".py"):
+        # Reading code source files (.py) and project packaging manifests during startup
+        if lower.endswith((".py", ".whl", "pyproject.toml", "setup.cfg", "setup.py", "uv.lock", "requirements.txt", "pipfile", "poetry.lock")):
             return True
         return False
 
