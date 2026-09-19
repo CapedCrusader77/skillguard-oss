@@ -368,21 +368,26 @@ class RuntimeCapture:
         lower = path.lower().replace("\\", "/")
         if any(token in lower for token in ("/.ssh", "/.aws", "/.config", "/.env", "id_rsa", "passwd", "shadow", "secret", "token")):
             return False
-        if "/__pycache__/" in lower or lower.endswith((".pyc", ".pyo")):
+        if "/__pycache__/" in lower or lower.endswith((".pyc", ".pyo", ".dist-info", ".egg-info")):
             return True
         if "/.deps/" in lower:
             return True
         if lower.startswith((
-            "/usr/lib/",
-            "/usr/local/lib/",
-            "/usr/include/",
+            "/opt/",
+            "/usr/",
             "/lib/",
             "/lib64/",
             "/lib32/",
             "/etc/ld.so",
             "/etc/locale",
             "/etc/localtime",
+            "/tmp/",
+            "/dev/",
+            "/proc/",
         )):
+            return True
+        # Reading code source files (.py) during module imports
+        if lower.endswith(".py"):
             return True
         return False
 
