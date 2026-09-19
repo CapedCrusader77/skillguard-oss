@@ -45,6 +45,28 @@ WEIGHTS = {
 
 
 def verify_runtime(claims: ClaimProfile, runtime: RuntimeProfile) -> RuntimeVerificationReport:
+    if runtime.status != "completed":
+        weight = WEIGHTS.get("execution_incomplete", 20) if runtime.status != "sandbox_unavailable" else 0
+        severity = "HIGH" if runtime.status in {"crashed", "timeout"} else "MEDIUM"
+        finding = MismatchFinding(
+            id="VER-EXECUTION",
+            mismatch_type="execution_incomplete",
+            severity=severity,
+            weight=weight,
+            message=f"Runtime verification status: {runtime.status}. {runtime.error or ''}".strip(),
+            expected=["completed execution"],
+            observed=[runtime.status],
+        )
+        return RuntimeVerificationReport(
+            claim_profile=claims,
+            runtime_profile=runtime,
+            findings=[finding],
+            verification_available=False,
+            trust_delta=None,
+            verification_score=None,
+            verdict=f"Runtime verification incomplete: {runtime.status}",
+        )
+
     findings: list[MismatchFinding] = []
     _add_claim_state_findings(claims, runtime, findings)
     for access in runtime.files_touched:
@@ -64,23 +86,6 @@ def verify_runtime(claims: ClaimProfile, runtime: RuntimeProfile) -> RuntimeVeri
             weight = WEIGHTS["unexpected_system_resource"] if _sensitive(resource) else WEIGHTS["unexpected_read"]
             _append(findings, "VER-SYSTEM", "unexpected_system_resource", "HIGH" if weight > 20 else "MEDIUM", weight,
                     f"Accessed unexpected system resource: {resource}", observed=[resource])
-
-    if runtime.status in {"timeout", "crashed", "could_not_execute", "sandbox_unavailable", "invalid_target"}:
-        weight = WEIGHTS["execution_incomplete"] if runtime.status != "sandbox_unavailable" else 0
-        severity = "HIGH" if runtime.status in {"timeout", "crashed"} else "MEDIUM"
-        _append(findings, "VER-EXECUTION", "execution_incomplete", severity, weight,
-                f"Runtime verification status: {runtime.status}. {runtime.error or ''}".strip())
-
-    if runtime.status != "completed":
-        return RuntimeVerificationReport(
-            claim_profile=claims,
-            runtime_profile=runtime,
-            findings=findings,
-            verification_available=False,
-            trust_delta=None,
-            verification_score=None,
-            verdict="Runtime verification unavailable or incomplete",
-        )
 
     total = sum(f.weight for f in findings)
     # Keep the raw delta for comparison and auditability even when the

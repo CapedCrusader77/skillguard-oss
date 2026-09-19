@@ -98,9 +98,36 @@ class RuntimeCapture:
                 )
             except OSError as exc:
                 return RuntimeProfile(target=str(target), status="could_not_execute", error=f"Could not stage sandbox workspace: {exc}")
+
+            # Ensure workspace directory permissions for dropped privileges (uid 65534)
+            for dirpath, _, _ in os.walk(workspace_dir):
+                try:
+                    os.chmod(dirpath, 0o777)
+                except OSError:
+                    pass
+
+            # Pre-execution: sandboxed dependency installation
+            self._install_dependencies(bwrap, sandbox_root)
+
             sandbox_command = self._sandbox_command(bwrap, sandbox_root, inner_command)
             full_command = [strace, "-ff", "-o", trace_prefix, "-s", "256", "-e", "trace=file,network,process", *sandbox_command]
-            payload = json.dumps(input_payload or {"tool": "skillguard", "arguments": {}}) + "\n"
+            if input_payload is not None:
+                payload = json.dumps(input_payload) + "\n"
+            else:
+                payload = (
+                    json.dumps({
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "initialize",
+                        "params": {
+                            "protocolVersion": "2024-11-05",
+                            "capabilities": {},
+                            "clientInfo": {"name": "skillguard", "version": "0.1.0"}
+                        }
+                    }) + "\n"
+                    + json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}) + "\n"
+                    + json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}) + "\n"
+                )
             started = time.monotonic()
             try:
                 process = subprocess.Popen(
@@ -130,15 +157,118 @@ class RuntimeCapture:
             profile.duration_seconds = round(time.monotonic() - started, 3)
             profile.stdout = stdout[-self.max_output_chars:]
             profile.stderr = stderr[-self.max_output_chars:]
-            if timed_out:
-                profile.status = "timeout"
-                profile.error = f"Tool exceeded {self.timeout_seconds:g}s timeout"
+
+            stderr_lower = stderr.lower()
+            if "modulenotfounderror:" in stderr_lower or "importerror:" in stderr_lower or "no module named" in stderr_lower:
+                profile.status = "dependency_missing"
+                match = re.search(r"(?:No module named|No module named ')([^'\s\n]+)", stderr)
+                missing = match.group(1) if match else "unknown"
+                profile.error = f"Missing dependency: {missing}"
+            elif timed_out:
+                if ('"jsonrpc"' in stdout and ('"result"' in stdout or '"capabilities"' in stdout)) or ('"tools"' in stdout):
+                    profile.status = "completed"
+                    profile.error = None
+                elif not stdout.strip() and not stderr.strip():
+                    profile.status = "awaiting_handshake"
+                    profile.error = "Process awaited input or interactive client connection"
+                else:
+                    profile.status = "timeout"
+                    profile.error = f"Tool exceeded {self.timeout_seconds:g}s timeout"
             elif process.returncode != 0:
-                profile.status = "crashed"
-                profile.error = f"Tool exited with status {process.returncode}"
+                if any(phrase in stderr_lower for phrase in ("eof", "broken pipe", "unexpected end of file", "jsondecodeerror")):
+                    profile.status = "awaiting_handshake"
+                    profile.error = "Server terminated awaiting full MCP interaction or input"
+                else:
+                    profile.status = "crashed"
+                    profile.error = f"Tool exited with status {process.returncode}"
             else:
                 profile.status = "completed"
             return profile
+
+    @classmethod
+    def _install_dependencies(cls, bwrap: str, sandbox_root: Path) -> None:
+        deps_dir = sandbox_root / ".deps"
+        deps_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            os.chmod(deps_dir, 0o777)
+        except OSError:
+            pass
+
+        manifest_arg: list[str] | None = None
+        if (sandbox_root / "requirements.txt").exists():
+            manifest_arg = ["-r", "/workspace/requirements.txt"]
+        elif (sandbox_root / "pyproject.toml").exists() or (sandbox_root / "setup.py").exists():
+            manifest_arg = ["/workspace"]
+        else:
+            for req in sorted(sandbox_root.rglob("requirements.txt")):
+                if ".git" not in req.parts:
+                    manifest_arg = ["-r", f"/workspace/{req.relative_to(sandbox_root).as_posix()}"]
+                    break
+            if not manifest_arg:
+                for pyproj in sorted(sandbox_root.rglob("pyproject.toml")):
+                    if ".git" not in pyproj.parts:
+                        pkg_dir = pyproj.parent.relative_to(sandbox_root).as_posix()
+                        manifest_arg = [f"/workspace/{pkg_dir}" if pkg_dir != "." else "/workspace"]
+                        break
+
+        if not manifest_arg:
+            return
+
+        cmd = [sys.executable, "-m", "pip", "install", "--no-cache-dir", "--target", "/workspace/.deps", *manifest_arg]
+        sandbox_install_cmd = cls._sandbox_network_command(bwrap, sandbox_root, cmd)
+        try:
+            subprocess.run(
+                sandbox_install_cmd,
+                cwd=str(sandbox_root),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=60,
+            )
+            for dirpath, _, _ in os.walk(deps_dir):
+                try:
+                    os.chmod(dirpath, 0o777)
+                except OSError:
+                    pass
+        except Exception:
+            pass
+
+    @classmethod
+    def _sandbox_network_command(cls, bwrap: str, root: Path, inner_command: list[str]) -> list[str]:
+        args = [
+            bwrap, "--die-with-parent", "--new-session",
+            "--unshare-ipc", "--unshare-pid", "--unshare-uts",
+            "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp",
+            "--bind", str(root), "/workspace"
+        ]
+        for system_path in ("/usr", "/etc"):
+            if Path(system_path).exists():
+                args.extend(["--ro-bind", system_path, system_path])
+        for link_path in ("/bin", "/sbin", "/lib", "/lib64"):
+            link = Path(link_path)
+            if not link.exists():
+                continue
+            if link.is_symlink():
+                destination = os.readlink(link_path)
+                if destination.startswith("/"):
+                    destination = destination[1:]
+                args.extend(["--symlink", destination, link_path])
+            else:
+                args.extend(["--ro-bind", link_path, link_path])
+        if hasattr(os, "geteuid") and os.geteuid() == 0:
+            args.extend(["--uid", "65534", "--gid", "65534"])
+        executable = Path(inner_command[0]).resolve() if inner_command else None
+        if executable and executable.exists() and not str(executable).startswith(("/usr/", "/bin/", "/lib/")):
+            environment_root = executable.parent.parent if executable.parent.name in {"bin", "Scripts"} else executable.parent
+            parent = environment_root.parent
+            chain: list[Path] = []
+            while parent != parent.parent and parent not in {Path("/"), Path("")}:
+                chain.append(parent)
+                parent = parent.parent
+            for directory in reversed(chain):
+                args.extend(["--dir", str(directory)])
+            args.extend(["--ro-bind", str(environment_root), str(environment_root)])
+        args.extend(["--chdir", "/workspace", "--setenv", "HOME", "/tmp", "--"])
+        return args + inner_command
 
     @staticmethod
     def _default_command(target: Path, root: Path) -> list[str]:
@@ -146,12 +276,17 @@ class RuntimeCapture:
             if target.suffix.lower() != ".py":
                 raise ValueError("Runtime verification currently supports Python files only")
             return [sys.executable, f"/workspace/{target.relative_to(root).as_posix()}"]
-        candidates = [root / name for name in ("server.py", "main.py", "app.py")]
+        candidates = []
+        for name in ("server.py", "main.py", "app.py"):
+            candidates.append(root / name)
         for name in ("server.py", "main.py", "app.py"):
             candidates.extend(sorted(root.rglob(name)))
-        candidates.extend(sorted(root.glob("*.py")))
-        candidates.extend(sorted(root.rglob("*.py")))
-        candidates = [path for path in candidates if ".git" not in path.parts and "__pycache__" not in path.parts]
+        all_py = [p for p in sorted(root.rglob("*.py")) if ".git" not in p.parts and "__pycache__" not in p.parts and "test" not in p.name.lower()]
+        server_py = [p for p in all_py if "client" not in str(p).lower() and ("server" in str(p).lower() or "mcp" in str(p).lower())]
+        non_client_py = [p for p in all_py if "client" not in str(p).lower()]
+        candidates.extend(server_py)
+        candidates.extend(non_client_py)
+        candidates.extend(all_py)
         entrypoint = next((path for path in candidates if path.exists() and path.is_file()), None)
         if not entrypoint:
             raise ValueError("No Python entrypoint found; pass an explicit command")
@@ -199,7 +334,7 @@ class RuntimeCapture:
             for directory in reversed(chain):
                 args.extend(["--dir", str(directory)])
             args.extend(["--ro-bind", str(environment_root), str(environment_root)])
-        args.extend(["--chdir", "/workspace", "--setenv", "PYTHONPATH", "/workspace", "--"])
+        args.extend(["--chdir", "/workspace", "--setenv", "PYTHONPATH", "/workspace/.deps:/workspace:/workspace/src", "--setenv", "HOME", "/tmp", "--"])
         return args + inner_command
 
     @classmethod

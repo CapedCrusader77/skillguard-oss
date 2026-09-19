@@ -77,7 +77,7 @@ jobs:
             --symlink usr/bin /bin --symlink usr/lib /lib \
             --symlink usr/lib64 /lib64 --uid 65534 --gid 65534 /usr/bin/true
       - name: Install SkillGuard dependencies
-        run: python -m pip install typer rich pydantic gitpython
+        run: python -m pip install typer rich pydantic gitpython build wheel mcp
       - name: Install SkillGuard without resolving metadata
         run: python -m pip install --no-deps -e .
       - name: Run bounded real-repository smoke benchmark

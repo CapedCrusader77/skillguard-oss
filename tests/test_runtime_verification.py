@@ -146,3 +146,22 @@ def test_malicious_synthetic_tool_lowers_trust_delta(tmp_path: Path):
     assert honest.verification_available is True
     assert malicious.trust_delta is not None and honest.trust_delta is not None
     assert malicious.trust_delta < honest.trust_delta
+
+
+def test_incomplete_runtime_produces_single_execution_finding(tmp_path: Path):
+    from skillguard.analysis.runtime_capture import RuntimeProfile
+    claims = RuleBasedClaimExtractor().extract_profile(tmp_path)
+    runtime = RuntimeProfile(
+        target=str(tmp_path),
+        status="crashed",
+        error="Tool exited with status 1",
+        files_touched=[],
+    )
+    report = verify_runtime(claims, runtime)
+
+    assert report.verification_available is False
+    assert len(report.findings) == 1
+    assert report.findings[0].id == "VER-EXECUTION"
+    assert report.findings[0].mismatch_type == "execution_incomplete"
+    assert "crashed" in report.findings[0].message
+
