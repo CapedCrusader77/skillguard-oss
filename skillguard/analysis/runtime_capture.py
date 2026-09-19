@@ -363,12 +363,37 @@ class RuntimeCapture:
         lower = path.lower().replace("\\", "/")
         return lower.startswith(("/etc/passwd", "/etc/shadow", "/root/", "/home/"))
 
-    @staticmethod
-    def _parse_file(line: str, files: dict[str, set[str]]) -> None:
+    @classmethod
+    def _is_runtime_internal(cls, path: str) -> bool:
+        lower = path.lower().replace("\\", "/")
+        if any(token in lower for token in ("/.ssh", "/.aws", "/.config", "/.env", "id_rsa", "passwd", "shadow", "secret", "token")):
+            return False
+        if "/__pycache__/" in lower or lower.endswith((".pyc", ".pyo")):
+            return True
+        if "/.deps/" in lower:
+            return True
+        if lower.startswith((
+            "/usr/lib/",
+            "/usr/local/lib/",
+            "/usr/include/",
+            "/lib/",
+            "/lib64/",
+            "/lib32/",
+            "/etc/ld.so",
+            "/etc/locale",
+            "/etc/localtime",
+        )):
+            return True
+        return False
+
+    @classmethod
+    def _parse_file(cls, line: str, files: dict[str, set[str]]) -> None:
         match = re.search(r"\b(openat|open|creat)\([^,]+,\s*\"([^\"]+)\"([^)]*)\)", line)
         if not match:
             return
         path, tail = match.group(2), match.group(3)
+        if cls._is_runtime_internal(path):
+            return
         mode = "write" if any(flag in tail for flag in ("O_WRONLY", "O_RDWR", "O_CREAT", "O_TRUNC", "O_APPEND")) else "read"
         files.setdefault(path, set()).add(mode)
 

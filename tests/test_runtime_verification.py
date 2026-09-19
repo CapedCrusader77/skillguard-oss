@@ -165,3 +165,14 @@ def test_incomplete_runtime_produces_single_execution_finding(tmp_path: Path):
     assert report.findings[0].mismatch_type == "execution_incomplete"
     assert "crashed" in report.findings[0].message
 
+
+def test_runtime_internal_filtering():
+    assert RuntimeCapture._is_runtime_internal("/usr/lib/python3.12/os.py") is True
+    assert RuntimeCapture._is_runtime_internal("/workspace/.deps/pydantic/main.py") is True
+    assert RuntimeCapture._is_runtime_internal("/workspace/__pycache__/weather.cpython-312.pyc") is True
+    assert RuntimeCapture._is_runtime_internal("/etc/ld.so.cache") is True
+    assert RuntimeCapture._is_runtime_internal("/workspace/input.txt") is False
+    assert RuntimeCapture._is_runtime_internal("/workspace/.ssh/id_rsa") is False
+    assert RuntimeCapture._is_runtime_internal("/etc/passwd") is False
+
+
