@@ -5,6 +5,12 @@ on:
   push:
     branches: ["**"]
   workflow_dispatch:
+    inputs:
+      full_benchmark:
+        description: 'Run full 20-repo benchmark'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   runtime-regression:
@@ -61,7 +67,7 @@ jobs:
         run: exit 1
 
   benchmark-smoke:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.full_benchmark != true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -87,3 +93,31 @@ jobs:
         with:
           name: benchmark-smoke-results
           path: benchmark_smoke_results.json
+
+  benchmark-full:
+    if: github.event_name == 'workflow_dispatch' && inputs.full_benchmark == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install sandbox tools
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap strace git
+      - name: Verify bwrap namespace support
+        run: |
+          sudo bwrap --unshare-all --proc /proc --dev /dev \
+            --ro-bind /usr /usr --ro-bind /etc /etc \
+            --symlink usr/bin /bin --symlink usr/lib /lib \
+            --symlink usr/lib64 /lib64 --uid 65534 --gid 65534 /usr/bin/true
+      - name: Install SkillGuard dependencies
+        run: python -m pip install typer rich pydantic gitpython build wheel mcp
+      - name: Install SkillGuard without resolving metadata
+        run: python -m pip install --no-deps -e .
+      - name: Run full 20-repository benchmark
+        run: sudo -E "$(command -v skillguard)" benchmark-runtime benchmark_mcp_servers.txt --output benchmark_results.json --runtime-timeout 10
+      - name: Upload full benchmark
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark_results.json
