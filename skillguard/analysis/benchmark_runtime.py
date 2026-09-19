@@ -48,6 +48,7 @@ def run_runtime_benchmark(urls: Iterable[str], output_path: str = "benchmark_res
                     "trust_delta": verification.trust_delta,
                     "mismatch_count": len(verification.findings),
                     "mismatch_types": sorted({finding.mismatch_type for finding in verification.findings}),
+                    "sample_findings": [f.model_dump() for f in verification.findings[:15]],
                     "runtime_error": runtime.error,
                 })
             except Exception as exc:
