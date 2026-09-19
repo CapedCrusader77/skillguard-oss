@@ -348,6 +348,9 @@ class RuntimeCapture:
                 lines = trace_path.read_text(encoding="utf-8", errors="ignore").splitlines()
             except OSError:
                 continue
+            first_exec = next((line for line in lines if line.startswith("execve(")), None)
+            if first_exec and any(p in first_exec for p in ("bwrap", "/bin/bwrap", "/usr/bin/bwrap")):
+                continue
             for line in lines:
                 cls._parse_file(line, files)
                 cls._parse_network(line, networks)
@@ -366,8 +369,8 @@ class RuntimeCapture:
     @classmethod
     def _is_runtime_internal(cls, path: str) -> bool:
         lower = path.lower().replace("\\", "/")
-        # Bubblewrap internal pivot root setup
-        if lower.startswith("/newroot"):
+        # Bubblewrap internal pivot root and proc namespace setup
+        if lower.startswith(("/newroot", "self/", "proc/")) or lower in {"self", "setgroups", "uid_map", "gid_map", "ns", "status", "cmdline"}:
             return True
         # Standard system and Python library paths
         if lower.startswith((
