@@ -394,6 +394,10 @@ class RuntimeCapture:
             "/sys/",
         )):
             return True
+        # Root and workspace base directory probing
+        trimmed = lower.rstrip("/")
+        if trimmed in {"", "/", "/workspace", "/workspace/.deps", "/workspace/src"}:
+            return True
         # Outside standard system/runtime paths, sensitive credentials must never be filtered
         if any(token in lower for token in ("/.ssh", "/.aws", "/.config", "/.env", "id_rsa", "passwd", "shadow", "secret", "token")):
             return False
@@ -412,6 +416,8 @@ class RuntimeCapture:
         if not match:
             return
         path, tail = match.group(2), match.group(3)
+        if "O_DIRECTORY" in tail:
+            return
         if cls._is_runtime_internal(path):
             return
         mode = "write" if any(flag in tail for flag in ("O_WRONLY", "O_RDWR", "O_CREAT", "O_TRUNC", "O_APPEND")) else "read"
