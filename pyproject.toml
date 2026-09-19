@@ -38,6 +38,9 @@ Issues = "https://github.com/CapedCrusader77/skillguard-oss/issues"
 [project.scripts]
 skillguard = "skillguard.app:app"
 
+[tool.setuptools.packages.find]
+include = ["skillguard*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

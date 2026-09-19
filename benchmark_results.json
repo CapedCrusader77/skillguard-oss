@@ -1,0 +1,560 @@
+{
+  "schema_version": "1.0",
+  "tool": "skillguard claim-vs-runtime verification",
+  "timeout_seconds": 10.0,
+  "results": [
+    {
+      "url": "https://github.com/modelcontextprotocol/servers",
+      "status": "dependency_missing",
+      "runtime_status": "dependency_missing",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Model Context Protocol servers",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: dependency_missing. Missing dependency: markdownify",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "dependency_missing"
+          ]
+        }
+      ],
+      "runtime_error": "Missing dependency: markdownify"
+    },
+    {
+      "url": "https://github.com/modelcontextprotocol/python-sdk",
+      "status": "timeout",
+      "runtime_status": "timeout",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Model Context Protocol SDK",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "HIGH",
+          "weight": 20,
+          "message": "Runtime verification status: timeout. Tool exceeded 10s timeout",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "timeout"
+          ]
+        }
+      ],
+      "runtime_error": "Tool exceeded 10s timeout"
+    },
+    {
+      "url": "https://github.com/modelcontextprotocol/typescript-sdk",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Model Context Protocol implementation for TypeScript",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/microsoft/playwright-mcp",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Playwright Tools for MCP",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/github/github-mcp-server",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "[![Go Report Card](https://goreportcard.com/badge/github.com/github/github-mcp-server)](https://goreportcard.com/report/github.com/github/github-mcp-server)",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/upstash/context7",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Context7 monorepo - Documentation tools and SDKs",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/browserbase/mcp-server-browserbase",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "MCP server for AI web browser automation using Browserbase and Stagehand",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/firecrawl/firecrawl-mcp-server",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "MCP server for Firecrawl \u2014 search, scrape, and interact with the web, and search scientific papers. Supports both cloud and self-hosted instances. Features include web search, scraping, page interaction, batch processing, LLM-powered content analysis, and research paper search over biomedical and arXiv literature (PubMed, bioRxiv, medRxiv, arXiv) with citation-graph expansion and full-text reading.",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/modelcontextprotocol/quickstart-resources",
+      "status": "completed",
+      "runtime_status": "completed",
+      "verification_available": true,
+      "mismatch_types": [],
+      "mismatch_count": 0,
+      "claimed_purpose": "Example servers and clients for the [Model Context Protocol](https://modelcontextprotocol.io) (MCP), in five languages. These are companion examples for two official tutorials:",
+      "verification_score": 100,
+      "trust_delta": 0,
+      "sample_findings": [],
+      "runtime_error": null
+    },
+    {
+      "url": "https://github.com/modelcontextprotocol/inspector",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "The Model Context Protocol Inspector",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/modelcontextprotocol/example-remote-server",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "MCP Feature Reference Server with OAuth - Unified Implementation",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/googleapis/genai-toolbox",
+      "status": "dependency_missing",
+      "runtime_status": "dependency_missing",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "<div align=\"center\">",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: dependency_missing. Missing dependency: toolbox_server",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "dependency_missing"
+          ]
+        }
+      ],
+      "runtime_error": "Missing dependency: toolbox_server"
+    },
+    {
+      "url": "https://github.com/awslabs/mcp",
+      "status": "dependency_missing",
+      "runtime_status": "dependency_missing",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "A suite of specialized MCP servers that help you get the most out of AWS, wherever you use MCP.",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: dependency_missing. Missing dependency: unknown",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "dependency_missing"
+          ]
+        }
+      ],
+      "runtime_error": "Missing dependency: unknown"
+    },
+    {
+      "url": "https://github.com/mendableai/firecrawl-mcp-server",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "MCP server for Firecrawl \u2014 search, scrape, and interact with the web, and search scientific papers. Supports both cloud and self-hosted instances. Features include web search, scraping, page interaction, batch processing, LLM-powered content analysis, and research paper search over biomedical and arXiv literature (PubMed, bioRxiv, medRxiv, arXiv) with citation-graph expansion and full-text reading.",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/browsermcp/mcp",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "MCP server for browser automation using Browser MCP",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/exa-labs/exa-mcp-server",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Connect AI agents to Exa for web search, content fetching, and multi-step research.",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/openapi/mcp-server",
+      "status": "dependency_missing",
+      "runtime_status": "dependency_missing",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Openapi.com official MCP server \u2014 ready-to-use gateway and Python SDK for AI agents",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: dependency_missing. Missing dependency: fastapi",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "dependency_missing"
+          ]
+        }
+      ],
+      "runtime_error": "Missing dependency: fastapi"
+    },
+    {
+      "url": "https://github.com/Bandwidth/mcp-server",
+      "status": "dependency_missing",
+      "runtime_status": "dependency_missing",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Bandwidth MCP Server",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: dependency_missing. Missing dependency: fastmcp",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "dependency_missing"
+          ]
+        }
+      ],
+      "runtime_error": "Missing dependency: fastmcp"
+    },
+    {
+      "url": "https://github.com/apify/apify-mcp-server",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Apify MCP Server",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    },
+    {
+      "url": "https://github.com/docker/mcp-servers",
+      "status": "benchmark_error",
+      "runtime_status": "not_run",
+      "verification_available": false,
+      "mismatch_types": [],
+      "mismatch_count": 0,
+      "error": "Git clone failed: Cloning into '/tmp/skillguard_benchmark_yksgzox2'...\nfatal: could not read Username for 'https://github.com': No such device or address"
+    }
+  ],
+  "summary": {
+    "total": 20,
+    "completed": 1,
+    "with_mismatch": 0,
+    "mismatch_rate": 0.0,
+    "mismatch_types": {},
+    "runtime_available": true,
+    "note": null
+  }
+}

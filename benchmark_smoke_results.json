@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.0",
+  "tool": "skillguard claim-vs-runtime verification",
+  "timeout_seconds": 10.0,
+  "results": [
+    {
+      "url": "https://github.com/modelcontextprotocol/quickstart-resources",
+      "status": "completed",
+      "runtime_status": "completed",
+      "verification_available": true,
+      "mismatch_types": [],
+      "mismatch_count": 0,
+      "claimed_purpose": "Example servers and clients for the [Model Context Protocol](https://modelcontextprotocol.io) (MCP), in five languages. These are companion examples for two official tutorials:",
+      "verification_score": 100,
+      "trust_delta": 0,
+      "sample_findings": [],
+      "runtime_error": null
+    },
+    {
+      "url": "https://github.com/openapi/mcp-server",
+      "status": "dependency_missing",
+      "runtime_status": "dependency_missing",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Openapi.com official MCP server \u2014 ready-to-use gateway and Python SDK for AI agents",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: dependency_missing. Missing dependency: fastapi",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "dependency_missing"
+          ]
+        }
+      ],
+      "runtime_error": "Missing dependency: fastapi"
+    },
+    {
+      "url": "https://github.com/Bandwidth/mcp-server",
+      "status": "dependency_missing",
+      "runtime_status": "dependency_missing",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Bandwidth MCP Server",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: dependency_missing. Missing dependency: fastmcp",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "dependency_missing"
+          ]
+        }
+      ],
+      "runtime_error": "Missing dependency: fastmcp"
+    },
+    {
+      "url": "https://github.com/modelcontextprotocol/servers",
+      "status": "dependency_missing",
+      "runtime_status": "dependency_missing",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Model Context Protocol servers",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: dependency_missing. Missing dependency: markdownify",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "dependency_missing"
+          ]
+        }
+      ],
+      "runtime_error": "Missing dependency: markdownify"
+    },
+    {
+      "url": "https://github.com/apify/apify-mcp-server",
+      "status": "could_not_execute",
+      "runtime_status": "could_not_execute",
+      "verification_available": false,
+      "mismatch_types": [
+        "execution_incomplete"
+      ],
+      "mismatch_count": 1,
+      "claimed_purpose": "Apify MCP Server",
+      "verification_score": null,
+      "trust_delta": null,
+      "sample_findings": [
+        {
+          "id": "VER-EXECUTION",
+          "mismatch_type": "execution_incomplete",
+          "severity": "MEDIUM",
+          "weight": 20,
+          "message": "Runtime verification status: could_not_execute. No Python entrypoint found; pass an explicit command",
+          "expected": [
+            "completed execution"
+          ],
+          "observed": [
+            "could_not_execute"
+          ]
+        }
+      ],
+      "runtime_error": "No Python entrypoint found; pass an explicit command"
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "completed": 1,
+    "with_mismatch": 0,
+    "mismatch_rate": 0.0,
+    "mismatch_types": {},
+    "runtime_available": true,
+    "note": null
+  }
+}

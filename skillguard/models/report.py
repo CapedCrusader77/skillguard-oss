@@ -5,6 +5,7 @@ from skillguard.models.finding import Finding
 from skillguard.models.risk import RiskLevel
 from skillguard.core.trust_score import TrustScoreReport
 from skillguard.analysis.models import EvaluationReport
+from skillguard.analysis.runtime_verification import RuntimeVerificationReport
 
 class PermissionLevel(str, Enum):
     HIGH = "HIGH"
@@ -35,6 +36,7 @@ class RepositoryReport(BaseModel):
     permission_footprint: PermissionFootprint = Field(..., description="Permissions footprint summary")
     findings: List[Finding] = Field(default_factory=list, description="Security findings for this repository")
     evaluation_report: Optional[EvaluationReport] = Field(None, description="Claim vs Behavior Evaluation Report")
+    runtime_verification: Optional[RuntimeVerificationReport] = Field(None, description="Claim vs Runtime Verification Report")
     project_type: str = Field("Generic", description="Profiled project type")
     verdict: str = Field(..., description="SAFE, REVIEW RECOMMENDED, HIGH RISK, or DANGEROUS")
 
@@ -54,6 +56,7 @@ class Report(BaseModel):
     findings: List[Finding] = Field(default_factory=list, description="List of actual high/critical security findings")
     trust_score: Optional[TrustScoreReport] = Field(None, description="Detailed Trust Score breakdown")
     evaluation_report: Optional[EvaluationReport] = Field(None, description="Claim vs Behavior Evaluation Report")
+    runtime_verification: Optional[RuntimeVerificationReport] = Field(None, description="Claim vs Runtime Verification Report")
     project_type: str = Field("Generic", description="Profiled project type")
     permission_footprint: PermissionFootprint = Field(default_factory=PermissionFootprint, description="Permissions footprint summary")
     executive_summary: ExecutiveSummary = Field(..., description="Executive summary status")

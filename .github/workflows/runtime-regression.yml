@@ -1,0 +1,123 @@
+name: Runtime Verification Regression Tests
+
+on:
+  pull_request:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+    inputs:
+      full_benchmark:
+        description: 'Run full 20-repo benchmark'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  runtime-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install sandbox tools
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap strace
+      - name: Verify bwrap namespace support
+        run: |
+          sudo bwrap --unshare-all --proc /proc --dev /dev \
+            --ro-bind /usr /usr --ro-bind /etc /etc \
+            --symlink usr/bin /bin --symlink usr/lib /lib \
+            --symlink usr/lib64 /lib64 --uid 65534 --gid 65534 /usr/bin/true
+      - name: Show Python and pip versions
+        run: python --version && python -m pip --version
+      - name: Install test runner
+        run: python -m pip install --upgrade pytest
+      - name: Install runtime dependencies
+        run: python -m pip install typer rich pydantic gitpython
+      - name: Install SkillGuard without resolving metadata
+        run: python -m pip install --no-deps -e .
+      - name: Run full pytest suite
+        id: full-tests
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          sudo -E "$(command -v python)" -m pytest -q --junitxml=pytest-results.xml 2>&1 | tee pytest.log
+      - name: Validate honest synthetic tool
+        if: always()
+        run: sudo -E "$(command -v python)" -m pytest -q tests/test_runtime_verification.py -k honest_synthetic_tool_in_sandbox
+      - name: Validate mismatched synthetic tool
+        if: always()
+        run: sudo -E "$(command -v python)" -m pytest -q tests/test_runtime_verification.py -k mismatched_synthetic_tool_in_sandbox
+      - name: Require malicious synthetic tool mismatch
+        if: always()
+        run: sudo -E "$(command -v python)" -m pytest -q tests/test_runtime_verification.py -k malicious_synthetic_tool_detects_sensitive_read
+      - name: Require malicious trust delta
+        if: always()
+        run: sudo -E "$(command -v python)" -m pytest -q tests/test_runtime_verification.py -k malicious_synthetic_tool_lowers_trust_delta
+      - name: Upload pytest diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-regression-pytest-diagnostics
+          path: |
+            pytest-results.xml
+            pytest.log
+      - name: Enforce full pytest result
+        if: steps.full-tests.outcome == 'failure'
+        run: exit 1
+
+  benchmark-smoke:
+    if: github.event_name == 'workflow_dispatch' && inputs.full_benchmark != true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install sandbox tools
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap strace git
+      - name: Verify bwrap namespace support
+        run: |
+          sudo bwrap --unshare-all --proc /proc --dev /dev \
+            --ro-bind /usr /usr --ro-bind /etc /etc \
+            --symlink usr/bin /bin --symlink usr/lib /lib \
+            --symlink usr/lib64 /lib64 --uid 65534 --gid 65534 /usr/bin/true
+      - name: Install SkillGuard dependencies
+        run: python -m pip install typer rich pydantic gitpython build wheel mcp
+      - name: Install SkillGuard without resolving metadata
+        run: python -m pip install --no-deps -e .
+      - name: Run bounded real-repository smoke benchmark
+        run: sudo -E "$(command -v skillguard)" benchmark-runtime benchmark_mcp_smoke.txt --output benchmark_smoke_results.json --runtime-timeout 10
+      - name: Upload smoke benchmark
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-smoke-results
+          path: benchmark_smoke_results.json
+
+  benchmark-full:
+    if: github.event_name == 'workflow_dispatch' && inputs.full_benchmark == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install sandbox tools
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap strace git
+      - name: Verify bwrap namespace support
+        run: |
+          sudo bwrap --unshare-all --proc /proc --dev /dev \
+            --ro-bind /usr /usr --ro-bind /etc /etc \
+            --symlink usr/bin /bin --symlink usr/lib /lib \
+            --symlink usr/lib64 /lib64 --uid 65534 --gid 65534 /usr/bin/true
+      - name: Install SkillGuard dependencies
+        run: python -m pip install typer rich pydantic gitpython build wheel mcp
+      - name: Install SkillGuard without resolving metadata
+        run: python -m pip install --no-deps -e .
+      - name: Run full 20-repository benchmark
+        run: sudo -E "$(command -v skillguard)" benchmark-runtime benchmark_mcp_servers.txt --output benchmark_results.json --runtime-timeout 10
+      - name: Upload full benchmark
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark_results.json

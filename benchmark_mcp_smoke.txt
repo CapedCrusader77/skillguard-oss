@@ -1,0 +1,6 @@
+# Manual-only smoke subset. It is intentionally separate from the 20-repository benchmark.
+https://github.com/modelcontextprotocol/quickstart-resources
+https://github.com/openapi/mcp-server
+https://github.com/Bandwidth/mcp-server
+https://github.com/modelcontextprotocol/servers
+https://github.com/apify/apify-mcp-server
