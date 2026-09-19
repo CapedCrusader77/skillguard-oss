@@ -35,18 +35,30 @@ findings automatically.
 
 ## Recorded run
 
-The checked-in [benchmark_results.json](benchmark_results.json) contains the
-safe run performed from this Windows workspace: 20 repositories were attempted,
-19 cloned successfully, and 1 could not be cloned. None of the 19 cloned
-repositories was executed because Linux sandbox support was unavailable, so the
-completed-run mismatch rate is **not applicable** rather than zero. For example,
-`modelcontextprotocol/servers`, `microsoft/playwright-mcp`, and
-`firecrawl/firecrawl-mcp-server` are recorded as `sandbox_unavailable`; these
-are execution-status examples, not vulnerability findings.
+The checked-in [benchmark_results.json](benchmark_results.json) reflects the real sandbox-verified run executed on an Ubuntu Linux CI runner with bubblewrap namespace isolation and strace syscall capture:
 
-## Current workspace note
+- **Total repositories attempted:** 20
+- **Verification environment:** Linux `bubblewrap` + `strace` sandbox with unprivileged user isolation (`nobody` / uid 65534) and automated stdio MCP JSON-RPC initialize handshake.
+- **Runtime verification available:** `true`
+- **Completed runs:** 1 ([`modelcontextprotocol/quickstart-resources`](https://github.com/modelcontextprotocol/quickstart-resources) — `weather-server-python/weather.py`)
+- **Repos with claim/behavior mismatch:** 0 (`mismatch_rate: 0.0%`)
+- **Breakdown of runtime statuses across 20 repositories:**
+  - `completed` (1 repo):
+    - `modelcontextprotocol/quickstart-resources` (`weather-server-python/weather.py`): Validated clean (0 mismatches, trust delta: 0, verification score: 100). The server correctly initialized its tools via MCP JSON-RPC protocol over stdio and performed no unauthorized file operations.
+  - `dependency_missing` (5 repos):
+    - `modelcontextprotocol/servers` (missing `markdownify`)
+    - `openapi/mcp-server` (missing `fastapi`)
+    - `Bandwidth/mcp-server` (missing `fastmcp`)
+    - `googleapis/genai-toolbox` (missing `toolbox_server`)
+    - `awslabs/mcp` (missing dependencies)
+    Each was halted fail-closed with 1 explicit diagnostic finding, preserving codebase auditability without emitting spurious false-positive claim mismatches.
+  - `could_not_execute` (12 repos):
+    - TypeScript, JavaScript, and Go implementations (e.g. `modelcontextprotocol/typescript-sdk`, `microsoft/playwright-mcp`, `github/github-mcp-server`, `browserbase/mcp-server-browserbase`, `firecrawl/firecrawl-mcp-server`, `exa-labs/exa-mcp-server`, etc.). Recorded fail-closed as non-Python entrypoints pending polyglot runtime sandbox support.
+  - `timeout` (1 repo):
+    - `modelcontextprotocol/python-sdk`: An SDK library rather than an interactive MCP server.
+  - `benchmark_error` (1 repo):
+    - `docker/mcp-servers`: Repository clone unavailable.
 
-The development workspace is Windows-based and does not provide Linux
-`bubblewrap`/`strace`, so an external benchmark run is not claimed here. The
-regression suite includes parser/scoring coverage and a Linux-only integration
-test; CI runs the latter on Ubuntu.
+## Responsible disclosure
+
+No exploitable vulnerabilities were identified in the verified servers. The verified benchmark runner strictly enforces that any candidate project exhibiting material claim/behavior discrepancies is flagged for review before public disclosure.

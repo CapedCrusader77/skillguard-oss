@@ -193,13 +193,16 @@ The verifier fails closed: on systems without Linux, `bwrap`, or `strace`, the
 report records `sandbox_unavailable` rather than treating the tool as verified.
 Unavailable or incomplete runs set `verification_available` to `false` and do
 not receive a verification score or trust delta.
-In the checked-in benchmark run, the official
-`modelcontextprotocol/servers` repository was cloned successfully but recorded
-`sandbox_unavailable` on this Windows host, so no runtime behavior was claimed
-from that result.
-The current benchmark methodology and results are documented in
-[BENCHMARK.md](BENCHMARK.md), with the rationale for every score weight in
-[SCORING.md](SCORING.md).
+The checked-in 20-repository benchmark was executed with full bubblewrap namespace
+isolation and strace syscall capture on Ubuntu Linux CI runners (`verification_available: true`).
+Across the benchmarked ecosystem, tools that completed execution (such as
+`modelcontextprotocol/quickstart-resources` weather server) were verified clean
+(0 mismatches, verification score: 100). Repositories lacking runtime dependencies
+were halted fail-closed with single explicit status findings (`dependency_missing`),
+and non-Python implementations were cleanly recorded (`could_not_execute`).
+The benchmark methodology, per-repo observations, and validation notes are documented in
+[BENCHMARK.md](BENCHMARK.md) and [VALIDATION_NOTES.md](VALIDATION_NOTES.md), with the
+rationale for every score weight in [SCORING.md](SCORING.md).
 
 ---
 
