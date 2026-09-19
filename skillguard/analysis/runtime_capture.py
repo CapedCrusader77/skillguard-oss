@@ -366,12 +366,10 @@ class RuntimeCapture:
     @classmethod
     def _is_runtime_internal(cls, path: str) -> bool:
         lower = path.lower().replace("\\", "/")
-        if any(token in lower for token in ("/.ssh", "/.aws", "/.config", "/.env", "id_rsa", "passwd", "shadow", "secret", "token")):
-            return False
-        if "/__pycache__/" in lower or lower.endswith((".pyc", ".pyo", ".dist-info", ".egg-info")):
+        # Bubblewrap internal pivot root setup
+        if lower.startswith("/newroot"):
             return True
-        if "/.deps/" in lower:
-            return True
+        # Standard system and Python library paths
         if lower.startswith((
             "/opt/",
             "/usr/",
@@ -392,6 +390,13 @@ class RuntimeCapture:
             "/proc/",
             "/sys/",
         )):
+            return True
+        # Outside standard system/runtime paths, sensitive credentials must never be filtered
+        if any(token in lower for token in ("/.ssh", "/.aws", "/.config", "/.env", "id_rsa", "passwd", "shadow", "secret", "token")):
+            return False
+        if "/__pycache__/" in lower or lower.endswith((".pyc", ".pyo", ".dist-info", ".egg-info")):
+            return True
+        if "/.deps/" in lower:
             return True
         # Reading code source files (.py) and project packaging manifests during startup
         if lower.endswith((".py", ".whl", "pyproject.toml", "setup.cfg", "setup.py", "uv.lock", "requirements.txt", "pipfile", "poetry.lock")):
